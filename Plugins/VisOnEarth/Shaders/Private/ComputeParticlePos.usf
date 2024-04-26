@@ -1,0 +1,139 @@
+﻿#include "/Engine/Private/Common.ush"
+#include "/Engine/Public/Platform.ush"
+int3 ThreadGroupCount;
+Texture2D FlowFieldTexture;
+SamplerState FlowFieldTextureSampler;
+
+RWBuffer<float4> RWParticlePosition;
+RWBuffer<float4> RWParticleSpeed;
+RWBuffer<float4> RWTrailPosition;
+uint TrailIndex;
+
+float RandomCoefficient;
+
+
+// FlowFieldSettings
+float2 DataLonRange;
+float2 DataLatRange;
+float2 DataLevRange;
+int3 DataDimension;
+float2 ViewLonRange;
+float2 ViewLatRange;
+float2 ViewLevRange;
+float SpeedScaleFactor;
+float TrailFadeOpacity;
+float DropRate;
+float DropRateFactor;
+float HueRange;
+float HueOffset;
+uint ParticleSum;
+uint TrailLength;
+
+
+// pseudo-random generator
+static const float3 RandomConstants = float3(12.9898, 78.233, 4375.85453);
+static const float2 normalRange = float2(0.0, 1.0);
+
+float Rand(float2 Seed, float2 Range)
+{
+	float2 RandomSeed = RandomCoefficient * Seed;
+	float temp = dot(RandomConstants.xy, RandomSeed);
+	temp = frac(sin(temp) * (RandomConstants.z + temp));
+	return temp * (Range.y - Range.x) + Range.x;
+}
+
+float2 GenerateRandomParticle(float2 SeedX, float2 SeedY, float2 RangeX, float2 RangeY)
+{
+	return float2(Rand(SeedX, RangeX) , Rand(SeedY, RangeY));
+}
+
+
+float2 LonLatLevToUV(float3 LonLatLev, float2 LonRange, float2 LatRange)
+{
+	float Lon = LonLatLev.x;
+	float Lat = LonLatLev.y;
+	return float2(  (Lon - LonRange.x) / (LonRange.y - LonRange.x) ,  (Lat - LatRange.x) / (LatRange.y - LatRange.x) );
+}
+/* */
+float3 calculateSpeedByRungeKutta2(float3 LonLatLev, float SpeedScaleFactor, float2 LonRange, float2 LatRange) {
+	// see https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Second-order_methods_with_two_stages for detail
+	const float h = 0.5;
+
+	float3 y_n = LonLatLev;
+	float3 f_n = FlowFieldTexture.SampleLevel(FlowFieldTextureSampler, LonLatLevToUV(y_n, LonRange, LatRange), 0).xyz;
+	
+	float3 midpoint = y_n + 0.5 * h * f_n * SpeedScaleFactor;
+	float3 tmp = FlowFieldTexture.SampleLevel(FlowFieldTextureSampler, LonLatLevToUV(midpoint, LonRange, LatRange), 0).xyz;
+	
+	float3 speed = h * tmp * SpeedScaleFactor;
+
+	return speed;
+}
+
+float3 calculateSpeedByForwardEuler(float3 LonLatLev, float SpeedScaleFactor, float2 LonRange, float2 LatRange){
+	const float h = 0.4;
+	float3 f_n = FlowFieldTexture.SampleLevel(FlowFieldTextureSampler, LonLatLevToUV(LonLatLev, LonRange, LatRange), 0).xyz;
+	float3 speed = h * f_n * SpeedScaleFactor;
+	return speed;  
+}
+
+/* All Compute is in Degrees: 45.0, 90.0, 360.0... */
+[numthreads(1, 1, 1)]
+void MainCS(
+	uint3 GroupId : SV_GroupID,
+	uint3 DispatchThreadId : SV_DispatchThreadID,
+	uint3 GroupThreadId : SV_GroupThreadID)
+{
+
+	uint Index = GroupId.z * ThreadGroupCount.x * ThreadGroupCount.y +
+			 GroupId.y * ThreadGroupCount.x +
+			 GroupId.x;
+	if(Index >= ParticleSum) return; // When Allocate ParticleSum to ThreadGroupCount, we have to RoundUp occasionally, thus have redundant threads
+	
+	// Write prevPos To Trail Texture
+	float4 prevPos = RWParticlePosition[Index];
+
+	// CurrPos = PrevPos + Previous Speed
+	float3 currPos = prevPos.xyz + RWParticleSpeed[Index].xyz;
+	currPos.x = currPos.x < 0 ? 360.0 + currPos.x : fmod(currPos.x, 360.0);	// Prevent Line Movement Break at Degree 0<->360 
+	float3 speed = calculateSpeedByRungeKutta2(currPos, SpeedScaleFactor, DataLonRange, DataLatRange);
+	float speedValidBit = 1.0;
+
+	// NextPos = CurrPos + Current Speed
+	// nextPos will be LineEnd In DrawPass, therefore pos has to be valid
+	float3 nextPos = currPos + speed;
+	nextPos.x = nextPos.x < 0 ? 360.0 + nextPos.x : fmod(nextPos.x, 360.0);  // Prevent Line Movement Break at Degree 0<->360 
+	float posValidBit = 1.0;
+	
+	// Faster Speed Particle will have Bigger DropRate? 
+	// float particleDropRate = DropRate + DropRateFactor * (speed.x+speed.y) / 10.0;
+	float particleDropRate = DropRate;
+
+	float2 randUV = float2(0.0, 0.0);
+	float randomNumber = Rand( randUV + float2(speed.x, currPos.y), normalRange);
+
+	// TO-DO: Process Range Like [270, 30] where range.x > range.y
+	// if(DataLonRange.x > DatLonRange.y) ......
+	float2 LonRange = float2(max(DataLonRange.x, ViewLonRange.x), min(DataLonRange.y, ViewLonRange.y));
+	float2 LatRange = float2(max(DataLatRange.x, ViewLatRange.x), min(DataLatRange.y, ViewLatRange.y));
+	if (randomNumber < particleDropRate)
+	{
+		currPos.xy = GenerateRandomParticle(randUV + currPos.xy, randUV + speed.xy, LonRange, LatRange);
+		speedValidBit = 0.0;
+		posValidBit = 0.0;
+	}
+	// DataRange:[Min, Max],
+	// LonMin <= (nextPos.x)Lon <= LonMax 
+	// else if (nextPos.x > DataLonRange.y || nextPos.x < DataLonRange.x || nextPos.y > DataLatRange.y || nextPos.y < DataLatRange.x)
+	else if (nextPos.x > LonRange.y || nextPos.x < LonRange.x || nextPos.y > LatRange.y || nextPos.y < LatRange.x)
+	{
+		currPos.xy = GenerateRandomParticle(randUV + currPos.xy, randUV + speed.xy, LonRange, LatRange);
+		speedValidBit = 0.0;
+		posValidBit = 0.0;
+	}
+	
+	RWParticlePosition[Index] = float4(currPos, posValidBit);
+	RWParticleSpeed[Index] = float4(speed, speedValidBit);
+	RWTrailPosition[TrailIndex*ParticleSum + Index] = prevPos;
+}
+

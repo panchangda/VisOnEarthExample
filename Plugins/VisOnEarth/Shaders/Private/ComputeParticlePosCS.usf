@@ -1,0 +1,118 @@
+﻿#include "/Engine/Private/Common.ush"
+#include "/Engine/Public/Platform.ush"
+
+Texture2D WindFieldTexture;
+SamplerState WindFieldTextureSampler;
+Texture2D CurrParticleMap;
+Texture2D ParticleSpeedMap;
+SamplerState ParticleMapSampler;
+RWTexture2D<float4> OutCurrPositionTexture;
+RWTexture2D<float4> OutParticleSpeedTexture;
+RWTexture2D<float4> OutTrailPositionTexture;
+
+
+float RandomCoefficient;
+
+
+// FlowFieldSettings
+float2 LonRange;
+float2 LatRange;
+float2 LevRange;
+float4 SpeedRange;
+float SpeedFactor;
+float DropRate;
+float DropRateFactor;
+
+
+
+// pseudo-random generator
+static const float3 randomConstants = float3(12.9898, 78.233, 4375.85453);
+static const float2 normalRange = float2(0.0, 1.0);
+
+float rand(float2 seed, float2 range)
+{
+	float2 randomSeed = RandomCoefficient * seed;
+	float temp = dot(randomConstants.xy, randomSeed);
+	temp = frac(sin(temp) * (randomConstants.z + temp));
+	return temp * (range.y - range.x) + range.x;
+}
+
+float2 generateRandomParticle(float2 seed1, float2 seed2)
+{
+	float randX = rand(seed1, normalRange);
+	float randY = rand(seed2, normalRange);
+	return float2(randX, randY);
+}
+
+
+/* */
+float3 calculateSpeedByRungeKutta2(float3 lonLatLev) {
+	// see https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Second-order_methods_with_two_stages for detail
+	const float h = 0.5;
+
+	float3 y_n = lonLatLev;
+	float3 f_n = WindFieldTexture.SampleLevel(WindFieldTextureSampler, lonLatLev.xy, 0).xyz;
+	
+	float3 midpoint = y_n + 0.5 * h * f_n * SpeedFactor;
+	float3 tmp = WindFieldTexture.SampleLevel(WindFieldTextureSampler, midpoint.xy, 0).xyz;
+	
+	float3 speed = h * tmp * SpeedFactor;
+
+	return speed;
+}
+
+float3 calculateSpeedByForwardEuler(float3 lonLatLev){
+	const float h = 0.4;
+	float3 f_n = WindFieldTexture.SampleLevel(WindFieldTextureSampler, lonLatLev.xy, 0).xyz;
+	float3 speed = h * f_n * SpeedFactor;
+	return speed;  
+}
+
+
+
+[numthreads(1, 1, 1)]
+void MainCS(
+	uint3 GroupId : SV_GroupID,
+	uint3 DispatchThreadId : SV_DispatchThreadID,
+	uint3 GroupThreadId : SV_GroupThreadID)
+{
+	uint2 UV = uint2(GroupId.xy);
+
+	// Write prevPos To Trail Texture
+	float4 prevPos = CurrParticleMap[UV];
+	OutTrailPositionTexture[UV] = prevPos;
+
+	// CurrPos = PrevPos + Previous Speed
+	float3 currPos = prevPos.xyz + ParticleSpeedMap[UV].xyz;
+	float3 speed = calculateSpeedByRungeKutta2(currPos);
+	float speedValidBit = 1.0;
+
+	// NextPos = CurrPos + Current Speed
+	// nextPos will be LineEnd In DrawPass, therefore pos has to be valid
+	float3 nextPos = currPos + speed;
+	float posValidBit = 1.0;
+	
+	// Faster Speed Particle will have Bigger DropRate? 
+	// float particleDropRate = DropRate + DropRateFactor * (speed.x+speed.y) / 10.0;
+	float particleDropRate = DropRate;
+	
+	float randomNumber = rand(UV / 1024.0 + float2(speed.x, currPos.y), normalRange);
+
+	if (randomNumber < particleDropRate)
+	{
+		currPos.xy = generateRandomParticle(UV / 1024.0 + currPos.xy, UV / 1024.0 + speed.xy);
+		speedValidBit = 0.0;
+		posValidBit = 0.0;
+	}
+	else if (nextPos.x > 1.0 || nextPos.x < 0.0 || nextPos.y > 1.0 || nextPos.y < 0.0)
+	{
+		currPos.xy = generateRandomParticle(UV / 1024.0 + currPos.xy, UV / 1024.0 + speed.xy);
+		speedValidBit = 0.0;
+		posValidBit = 0.0;
+	}
+
+	// OutPrevPositionTexture[UV] = float4(currPos.xy, 0.0, 1.0);
+	OutCurrPositionTexture[UV] = float4(currPos, posValidBit);
+	OutParticleSpeedTexture[UV] = float4(speed, speedValidBit);
+}
+

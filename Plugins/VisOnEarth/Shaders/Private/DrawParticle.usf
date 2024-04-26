@@ -1,0 +1,165 @@
+﻿#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/Common.ush"
+#include "../Public/GeoTransform.ush"
+#include "../Public/ColorMapping.ush"
+
+float4x4 WorldToClipMatrix;
+float4x4 ECEFToLocalMatrix;
+Buffer<float4> ParticlePosition;
+Buffer<float4> ParticleSpeed;
+Buffer<float4> TrailPosition;
+uint TrailIndex;
+
+// FlowFieldSettings
+float2 DataLonRange;
+float2 DataLatRange;
+float2 DataLevRange;
+int3 DataDimension;
+float2 ViewLonRange;
+float2 ViewLatRange;
+float2 ViewLevRange;
+float SpeedScaleFactor;
+float TrailFadeOpacity;
+float DropRate;
+float DropRateFactor;
+float HueRange;
+float HueOffset;
+uint ParticleSum;
+uint TrailLength;
+
+
+const static float ArrowLengthScale = 0.3;
+
+float2 RotateVector(float2 vec, float angleInRadians)
+{
+	float c = cos(angleInRadians);
+	float s = sin(angleInRadians);
+	float2x2 rotationMatrix = float2x2(c, -s, s, c);
+	float2 rotatedVec =  mul(rotationMatrix, vec);
+	return rotatedVec / length(rotatedVec);
+}
+
+
+void MainVS(
+	in uint InFlag : ATTRIBUTE0,
+	uint InInstanceId : SV_InstanceID,
+	out float4 OutPosition : SV_POSITION,
+	out float4 VertexOutColor : TEXCOORD0)
+{
+
+	VertexOutColor = float4(0.0, 0.0, 0.0, 1.0);
+	OutPosition = float4(-2.0, -2.0, 0.0, 1.0);
+	
+	// TrailNumber x: No.x Trail
+	int TrailNumber = InInstanceId / ParticleSum - 1;
+	int Index = InInstanceId % ParticleSum;
+	float3 finalPos;
+	// CurrParticle => Opaque Line
+	if(TrailNumber < 0) 
+	{
+		float4 currPos = ParticlePosition[Index]; // 0: Line Start Point: CurrPos
+		if(currPos.w == 0.0) return; // Particle is invalid
+		float4 currSpeed = ParticleSpeed[Index];
+		if(InFlag == 0) finalPos = currPos.xyz;
+		else if(InFlag == 1) finalPos = currPos.xyz + currSpeed.xyz; // 1: Line End Point: CurrPos + CurrSpeed
+
+		VertexOutColor = float4(getColorBySpeed(currSpeed, HueRange, HueOffset), 1.0);
+		// VertexOutColor = float4(1.0, 0.0, 0.0, 1.0); // for Debug
+	}
+	// Trails => Translucent Line
+	else if(TrailNumber == 0)	// First Trail: TrailPos -> CurrPos
+	{
+		float4 TrailPos = TrailPosition[TrailIndex*ParticleSum + Index];   
+		float4 currPos = ParticlePosition[Index];
+		if(TrailPos.w == 0.0 || currPos.w == 0.0) return;
+		if(InFlag == 0) finalPos = TrailPos.xyz;
+		else if(InFlag == 1) finalPos = currPos.xyz;
+		
+		VertexOutColor = float4(getColorBySpeed(currPos - TrailPos, HueRange, HueOffset), TrailFadeOpacity);
+		// VertexOutColor = float4(0.0, 1.0, 0.0, 1.0); // for Debug
+	}
+	else if(TrailNumber < TrailLength)	// Other Trails: tmpTrail -> nextTrail 
+	{
+		uint tmpTrailIndex = TrailNumber > TrailIndex ? TrailLength + TrailIndex - TrailNumber: TrailIndex - TrailNumber;
+		uint nextTrailIndex = tmpTrailIndex == TrailLength - 1 ? 0 : tmpTrailIndex + 1;
+	
+		float4 tmpTrailPos = TrailPosition[tmpTrailIndex*ParticleSum + Index];
+		float4 nextTrailPos = TrailPosition[nextTrailIndex*ParticleSum + Index];
+		if(tmpTrailPos.w == 0.0 || nextTrailPos.w == 0.0) return;
+		if(InFlag == 0) finalPos = tmpTrailPos.xyz;
+		else if(InFlag == 1) finalPos = nextTrailPos.xyz;
+
+		// Prevent Line Color Error at Degree 0<->360 
+		float4 TrailSpeed = nextTrailPos - tmpTrailPos;
+		if(abs(TrailSpeed.x) > 180.0)	
+		{
+			TrailSpeed.x =  TrailSpeed.x > 0 ? abs(TrailSpeed.x) - 360.0 : 360.0 - abs(TrailSpeed.x);
+		} 
+		VertexOutColor = float4(getColorBySpeed(TrailSpeed, HueRange, HueOffset), pow(TrailFadeOpacity, TrailNumber));
+		// VertexOutColor = float4(0.0, 0.0, 1.0, 1.0); // for Debug
+	}
+	// Arrows
+	else
+	{
+		float4 currPos = ParticlePosition[Index]; 
+		if(currPos.w == 0.0) return; // Particle is invalid
+		float4 currSpeed = ParticleSpeed[Index];
+		float4 currEnd = currPos + currSpeed;
+		if(InFlag == 0)	// 0: Line Start Point: CurrPos + CurrSpeed
+		{
+			finalPos = currEnd.xyz; 
+		}
+		else if(InFlag == 1 && TrailNumber == TrailLength) // Left Arrows 
+		{
+			finalPos = currEnd.xyz + float3(RotateVector(-currSpeed.xy, radians(-45.0)) * ArrowLengthScale, 1.0);  // 1: Line End Point: Currend + Rotated CurrSpeed
+		}
+		else if(InFlag == 1 && TrailNumber == TrailLength + 1) // Right Arrows
+		{
+			finalPos = currEnd.xyz + float3(RotateVector(-currSpeed.xy, radians(45.0)) * ArrowLengthScale, 1.0); // 1: Line End Point: Currend + Rotated CurrSpeed
+		}
+
+		VertexOutColor = float4(getColorBySpeed(currSpeed, HueRange, HueOffset), 1.0);
+	}
+	
+
+	
+	// SampleLevel
+	// float2 Pos;
+	// if(InFlag == 0.0) Pos = PrevParticleMap.SampleLevel(ParticleMapSampler, InTexCoord, 0).xy;
+	// else if(InFlag == 1.0) Pos = CurrParticleMap.SampleLevel(ParticleMapSampler, InTexCoord, 0).xy;
+
+	// Transform Line to ViewPort
+	// OutPosition = float4(finalPos * 2.0 - 1.0, 1.0);
+	// OutPosition.z = 1.0;
+	// return ;
+	
+	// Transform Line To A Plane Parallel to XYPlane
+	// if(InFlag==0)Pos = float2(InInstanceId*100, 1000);
+	// else if(InFlag==1)Pos.y = Pos.y+2000;
+	// OutPosition = mul(float4(Pos, 100.0, 1.0), WorldToClipMatrix);
+	// return ;
+
+	// Transform Line To A Sphere Surface
+	// float3 SphereCoordinate = LatLonAltToSphere(-90.0 + Pos.y*180.0, -180.0 + Pos.x*360.0, 0.0);
+	// OutPosition = mul(float4(SphereCoordinate, 1.0), WorldToClipMatrix);
+	// return;	
+	
+	// Transform Line To WGS84 Globe Coordinate
+	float Lon = radians(finalPos.x);
+	float Lat = radians(finalPos.y); 
+	float Height = EarthLong + DataLevRange.x;
+	float3 LonLatHeight = float3( Lon, Lat, Height);
+	float3 ECEF = BLHToECEF(LonLatHeight);
+	float3 UnrealLocal = ECEFPositionToLocal(ECEF, ECEFToLocalMatrix);
+	OutPosition = mul(float4(UnrealLocal, 1.0), WorldToClipMatrix);
+}
+
+
+void MainPS(
+	in float4 VertexOutColor : TEXCOORD0,
+	out float4 OutColor : SV_Target0)
+{
+    OutColor = VertexOutColor;
+}
+
+

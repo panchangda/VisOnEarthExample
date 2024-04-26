@@ -1,0 +1,240 @@
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/Common.ush"
+
+float4x4 WorldToClipMatrix;
+float4x4 ECEFToLocalMatrix;
+Texture2D CurrParticleMap;
+Texture2D ParticleSpeedMap;
+// Trail Texture Array
+Texture2D TrailParticleTextures_0;
+Texture2D TrailParticleTextures_1;
+Texture2D TrailParticleTextures_2;
+Texture2D TrailParticleTextures_3;
+Texture2D TrailParticleTextures_4;
+Texture2D TrailParticleTextures_5;
+Texture2D TrailParticleTextures_6;
+Texture2D TrailParticleTextures_7;
+Texture2D TrailParticleTextures_8;
+Texture2D TrailParticleTextures_9;
+
+SamplerState ParticleMapSampler;
+uint2 TexSize;
+uint ParticleSum;
+uint TrailLength;
+uint TrailIndex;
+
+static const float EarthLong = 6378137.f;
+static const float EarthShort = 6356752.314f;
+static const float EarthLongOverShort = EarthLong / EarthShort;
+static const float EarthShortOverLong = EarthShort / EarthLong;
+static const float EarthShortOverLongSqr = EarthShortOverLong * EarthShortOverLong;
+static const float EarthShortOverLongSqrMinusOne = EarthShortOverLongSqr - 1.f;
+
+
+float3 BLHToECEF(in float3 BLH) {
+	float3 ret;
+	ret.z = EarthShortOverLong * BLH.z * sin(BLH.y);
+	float cosL = cos(BLH.y);
+	ret.x = BLH.z * cosL * cos(BLH.x);
+	ret.y = BLH.z * cosL * sin(BLH.x);
+    
+	return ret;
+}
+
+float3 ECEFToBLH(in float3 pos) {
+	float3 ret;
+	ret.x = atan2(pos.y, pos.x);
+	ret.z = length(pos);
+	ret.y = asin(EarthLongOverShort * pos.z / ret.z);
+    
+	return ret;
+}
+
+float HeightToCenter(in float heightToCntrEarthLong, in float latitude) {
+	float sinL = sin(latitude);
+	return heightToCntrEarthLong * sqrt(1.f + EarthShortOverLongSqrMinusOne * sinL * sinL);
+}
+
+float3 ECEFPositionToLocal(in float3 ecefPosition, in float4x4 ecefToLocal)
+{
+	return  mul( float4(ecefPosition, 1.0), ecefToLocal).xyz;
+}
+
+float3 LatLonAltToSphere(float lat, float lon, float alt) {
+	// 地球半径，单位为米
+	// float EarthRadius = 6371000.0;
+	float EarthRadius = 1000.0;
+	// 将经纬度转换为弧度
+	float latitudeRadians = lat * (3.14159265358979323846 / 180.0);
+	float longitudeRadians = lon * (3.14159265358979323846 / 180.0);
+
+	// 根据经纬度和高度计算球面坐标
+	float x = (EarthRadius + alt) * cos(latitudeRadians) * cos(longitudeRadians);
+	float y = (EarthRadius + alt) * cos(latitudeRadians) * sin(longitudeRadians);
+	float z = (EarthRadius + alt) * sin(latitudeRadians);
+
+	return float3(x, y, z);
+}
+
+float4 SampleTrailTextureArrayWithIndex(uint index, uint2 texCoord)
+{
+	if(index == 0) return TrailParticleTextures_0.Load(uint3(texCoord, 0));
+	if(index == 1) return TrailParticleTextures_1.Load(uint3(texCoord, 0));
+	if(index == 2) return TrailParticleTextures_2.Load(uint3(texCoord, 0));
+	if(index == 3) return TrailParticleTextures_3.Load(uint3(texCoord, 0));
+	if(index == 4) return TrailParticleTextures_4.Load(uint3(texCoord, 0));
+	if(index == 5) return TrailParticleTextures_5.Load(uint3(texCoord, 0));
+	if(index == 6) return TrailParticleTextures_6.Load(uint3(texCoord, 0));
+	if(index == 7) return TrailParticleTextures_7.Load(uint3(texCoord, 0));
+	if(index == 8) return TrailParticleTextures_8.Load(uint3(texCoord, 0));
+	if(index == 9) return TrailParticleTextures_9.Load(uint3(texCoord, 0));
+	return float4(0.0, 0.0, 0.0, 0.0);
+} 
+
+
+
+void MainVS(
+	in uint InFlag : ATTRIBUTE0,
+	uint InInstanceId : SV_InstanceID,
+	out float4 OutPosition : SV_POSITION,
+	out float4 VertexOutColor : TEXCOORD0)
+{
+
+	VertexOutColor = float4(0.0, 1.0, 0.0, 1.0);
+	
+	uint IId = InInstanceId % ParticleSum;
+	// Calculated Instance TexCoord With InstanceID & TexSize
+	uint2 TexCoord = uint2(IId / TexSize.x, IId % TexSize.x);
+	
+	
+	// Load Particle Speed
+	float4 speed = ParticleSpeedMap.Load(uint3(TexCoord,0));
+	speed.w = 1.0;
+	// if (speed.w == 0.0)
+	// {
+	// 	OutPosition = (-1.0, -1.0, 0.0, 1.0);
+	// 	return ;
+	// }
+	// float speedValidBit = ParticleSpeedMap.SampleLevel(ParticleMapSampler, InTexCoord, 0).w;
+
+	
+	float2 Pos;
+	bool prevValid = true;
+	
+	if(InInstanceId < ParticleSum)			// CurrParticle => Opaque Line
+	{
+		// Load
+		float4 currParticlePos = CurrParticleMap.Load(uint3(TexCoord, 0));	// 0: Line Start Point
+		if(currParticlePos.w == 0.0)
+		{
+			VertexOutColor = float4(0.0, 0.0, 0.0, 0.0);
+			OutPosition = (-1.0, -1.0, 0.0, 1.0);
+			return ;
+		}
+		if(InFlag == 1) currParticlePos =  currParticlePos + speed;			// 1: Line End Point
+		Pos = currParticlePos.xy;
+		VertexOutColor = float4(1.0, 0.0, 0.0, 1.0);
+	}else if(InInstanceId < 2*ParticleSum && InInstanceId > ParticleSum)	// First TrailParticle => Translucent Line
+	{
+		float4 firstTrailLineStartPos = SampleTrailTextureArrayWithIndex(TrailIndex, TexCoord); // 0: Line Start Point
+		float4 firstTrailLineEndPos = CurrParticleMap.Load(uint3(TexCoord, 0));					// 1: Line End Point
+		// start point & end point must all be available!!!
+		if(firstTrailLineStartPos.w == 0.0 || firstTrailLineEndPos.w == 0)
+		{
+			VertexOutColor = float4(0.0, 0.0, 0.0, 0.0);
+			OutPosition = (-1.0, -1.0, 0.0, 1.0);
+			return ;
+		}
+		
+		Pos = InFlag == 0 ? firstTrailLineStartPos.xy : firstTrailLineEndPos.xy;
+		VertexOutColor = float4(0.0, 1.0, 0.0, 1.0);
+	}else 
+	{
+		// selectedTrailNumber means it's the  2th or 3th or 4th trail...
+		uint selectedTrailNumber = InInstanceId / ParticleSum - 1;
+		// selectedTrailIndex is (TrailIndex - selectedTrailNumber)   note index cannot be negative!
+		uint selectedTrailIndex = selectedTrailNumber > TrailIndex ? TrailLength + TrailIndex - selectedTrailNumber: TrailIndex - selectedTrailNumber;
+		uint prevTrailIndex = selectedTrailIndex == 0 ? TrailLength - 1: selectedTrailIndex - 1;
+		
+		float4 selectedTrailLineStartPos = SampleTrailTextureArrayWithIndex(prevTrailIndex, TexCoord);
+		float4 selectedTrailLineEndPos =  SampleTrailTextureArrayWithIndex(selectedTrailIndex, TexCoord);
+		
+		// start point & end point must all be available!!!
+		if(selectedTrailLineStartPos.w == 0.0 || selectedTrailLineEndPos.w == 0)
+		{
+			VertexOutColor = float4(0.0, 0.0, 0.0, 0.0);
+			OutPosition = (-1.0, -1.0, 0.0, 1.0);
+			return ;
+		}
+		
+		Pos = InFlag == 0 ? selectedTrailLineStartPos.xy : selectedTrailLineEndPos.xy;
+		VertexOutColor = float4(0.0, 0.0, 1.0, 1.0);
+	}
+
+	// float2 Pos;
+	// if(InFlag == 0) Pos = PrevParticleMap.Load(uint3(TexCoord, 0)).xy;
+	// else if(InFlag == 1) Pos = CurrParticleMap.Load(uint3(TexCoord, 0)).xy;
+	
+	// SampleLevel
+	// float2 Pos;
+	// if(InFlag == 0.0) Pos = PrevParticleMap.SampleLevel(ParticleMapSampler, InTexCoord, 0).xy;
+	// else if(InFlag == 1.0) Pos = CurrParticleMap.SampleLevel(ParticleMapSampler, InTexCoord, 0).xy;
+
+	// Transform Line to ViewPort
+	// VertexOutColor = float4(speed.xyz*10000.0, 1.0);
+	// OutPosition = float4(Pos*2.0-1.0, 1.0, 1.0);
+	// return ;
+	
+	// Transform Line To A Plane Parallel to XYPlane
+	// if(InFlag==0)Pos = float2(InInstanceId*100, 1000);
+	// else if(InFlag==1)Pos.y = Pos.y+2000;
+	// OutPosition = mul(float4(Pos, 100.0, 1.0), WorldToClipMatrix);
+	// return ;
+
+	// Transform Line To A Sphere Surface
+	// float3 SphereCoordinate = LatLonAltToSphere(-90.0 + Pos.y*180.0, -180.0 + Pos.x*360.0, 0.0);
+	// OutPosition = mul(float4(SphereCoordinate, 1.0), WorldToClipMatrix);
+	// return;	
+	
+	// Transform Line To WGS84 Globe Coordinate
+	float Lat = (Pos.y - 0.5) * PI;
+	float Lon = (Pos.x * 2.0) * PI;
+	float Height =  10000.0 + EarthLong;
+	float3 LonLatHeight = float3( Lon, Lat, Height);
+	float3 ECEF = BLHToECEF(LonLatHeight);
+	float3 UnrealLocal = ECEFPositionToLocal(ECEF, ECEFToLocalMatrix);
+	OutPosition = mul(float4(UnrealLocal, 1.0), WorldToClipMatrix);
+}
+
+
+void MainPS(
+	in float4 VertexOutColor : TEXCOORD0,
+	out float4 OutColor : SV_Target0)
+{
+    OutColor = VertexOutColor;
+}
+
+
+
+
+void DrawParticleVS(
+	in float4 Vertex : ATTRIBUTE0,
+	uint InInstanceId : SV_InstanceID,
+	out float4 OutPosition : SV_POSITION)
+{
+	uint2 TexCoord = uint2(InInstanceId / TexSize.x, InInstanceId % TexSize.x);
+
+	float speedValidBit = ParticleSpeedMap.Load(uint3(TexCoord,0)).w;
+	if (speedValidBit == 0.0)
+	{
+		OutPosition = (-1.0, -1.0, 0.0, 1.0);
+		return ;
+	}
+	
+	float2 Pos = CurrParticleMap.Load(uint3(TexCoord, 0)).xy;
+	
+	float2 UV = Pos + (Vertex.xy/1024.0);
+	UV = 2.0 * UV - 1.0;
+	OutPosition = float4(UV.r, UV.g, 0.0, 1.0);
+
+}
