@@ -18,9 +18,9 @@ void FlowFieldPooledRWBuffer::Initialize(FRDGBuilder& GraphBuilder, const TCHAR*
 	
 	TransientRDGBuffer = GraphBuilder.CreateBuffer(BufferDesc, ResourceName);
 	Buffer = GraphBuilder.ConvertToExternalBuffer(TransientRDGBuffer);
-	TransientRDGBuffer = GraphBuilder.RegisterExternalBuffer(Buffer);
 	GraphBuilder.QueueBufferUpload(TransientRDGBuffer, InitialData, BufferDesc.NumElements * BufferDesc.BytesPerElement);
 	PixelFormat = InPixelFormat;
+	TransientRDGBuffer = nullptr;
 }
 void FlowFieldPooledRWBuffer::Release()
 {
@@ -31,7 +31,7 @@ void FlowFieldPooledRWBuffer::Release()
 FRDGBufferRef FlowFieldPooledRWBuffer::GetOrCreateBuffer(FRDGBuilder& GraphBuilder)
 {
 	check(IsValid());
-	if (TransientRDGBuffer == nullptr || GraphBuilder.FindExternalBuffer(Buffer) == nullptr)
+	if (TransientRDGBuffer == nullptr)
 	{
 		TransientRDGBuffer = GraphBuilder.RegisterExternalBuffer(Buffer);
 	}
@@ -45,7 +45,7 @@ FRDGBufferRef FlowFieldPooledRWBuffer::GetOrCreateBuffer(FRDGBuilder& GraphBuild
 FRDGBufferSRVRef FlowFieldPooledRWBuffer::GetOrCreateSRV(FRDGBuilder& GraphBuilder)
 {
 	check(IsValid());
-	if (TransientRDGSRV == nullptr || GraphBuilder.FindExternalBuffer(Buffer) == nullptr)
+	if (TransientRDGSRV == nullptr)
 	{
 		TransientRDGSRV = GraphBuilder.CreateSRV(GetOrCreateBuffer(GraphBuilder), PixelFormat);
 	}
@@ -59,7 +59,7 @@ FRDGBufferSRVRef FlowFieldPooledRWBuffer::GetOrCreateSRV(FRDGBuilder& GraphBuild
 FRDGBufferUAVRef FlowFieldPooledRWBuffer::GetOrCreateUAV(FRDGBuilder& GraphBuilder)
 {
 	check(IsValid());
-	if (TransientRDGUAV == nullptr || GraphBuilder.FindExternalBuffer(Buffer) == nullptr)
+	if (TransientRDGUAV == nullptr)
 	{
 		TransientRDGUAV = GraphBuilder.CreateUAV(GetOrCreateBuffer(GraphBuilder), PixelFormat);
 	}
