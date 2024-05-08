@@ -12,31 +12,7 @@
  *
  * For Graphics
  */
-struct FTriVertexForInstanceDraw
-{
-	FVector4f Vertex;
-};
-class FTriVertexForInstanceDrawDeclaration : public FRenderResource
-{
-public:
-	FVertexDeclarationRHIRef VertexDeclarationRHI;
-	FTriVertexForInstanceDrawDeclaration() = default;
-	FTriVertexForInstanceDrawDeclaration(FTriVertexForInstanceDrawDeclaration&&) = default;
-	virtual ~FTriVertexForInstanceDrawDeclaration() = default;
 
-	void virtual InitRHI(FRHICommandListBase& RHICmdList) override
-	{
-		FVertexDeclarationElementList Elements;
-		uint16 Stride = sizeof(FTriVertexForInstanceDraw);
-		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTriVertexForInstanceDraw, Vertex), VET_Float4, 0, Stride));
-		VertexDeclarationRHI = PipelineStateCache::GetOrCreateVertexDeclaration(Elements);
-	}
-
-	void virtual ReleaseRHI() override
-	{
-		VertexDeclarationRHI.SafeRelease();
-	}
-};
 
 
 
@@ -58,7 +34,7 @@ public:
 #endif
 	
 	void AddDrawLinePass(FPostOpaqueRenderParameters& InParameters);
-	
+	void AddTestPass(FPostOpaqueRenderParameters& InParameters);
 	bool isMultiFrameResourceInitialized();
 private:
 	FDelegateHandle RenderHandle;
@@ -66,7 +42,7 @@ private:
 	int32 FrameCounter = -1;
 
 	FFlowFieldResources Resources;
-	
+	bool isInitializing = false;
 	FFlowFieldSettings Settings;
 	
 	FFlowFieldSettings SettingsFromGame;

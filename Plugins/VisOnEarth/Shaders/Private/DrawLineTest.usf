@@ -1,0 +1,21 @@
+﻿#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/Common.ush"
+
+
+void MainVS(
+	in float4 InVertex : ATTRIBUTE0,
+	uint InInstanceId : SV_InstanceID,
+	out float4 OutPosition : SV_POSITION,
+	out float4 VertexOutColor : TEXCOORD0)
+{
+	
+	OutPosition = InVertex;
+	VertexOutColor = float4(0.0, 1.0, 0.0, 1.0);
+}
+
+void MainPS(
+	in float4 VertexOutColor : TEXCOORD0,
+	out float4 OutColor : SV_Target0)
+{
+	OutColor = VertexOutColor;
+}

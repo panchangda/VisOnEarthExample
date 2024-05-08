@@ -12,7 +12,7 @@ class FRHICommandListImmediate;
 struct IPooledRenderTarget;
 
 // Use To Fill FSimpleUniformStructParameters
-USTRUCT(BlueprintType, meta = (ScriptName = "DIYShaderLibrary"))
+USTRUCT(BlueprintType, meta=(ScriptName="DIYShaderLibrary"))
 struct FSimpleShaderParameter
 {
 	GENERATED_USTRUCT_BODY()
@@ -35,7 +35,7 @@ struct FSimpleShaderParameter
 
 
 
-UCLASS(MinimalAPI, meta = (ScriptName = "DIYShaderLibrary"))
+UCLASS(MinimalAPI, meta=(ScriptName="DIYShaderLibrary"))
 class UDIYShaderBlueprintFunctionLib : public  UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()

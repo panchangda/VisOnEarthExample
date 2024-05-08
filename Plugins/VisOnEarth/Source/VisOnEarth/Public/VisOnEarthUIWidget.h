@@ -45,6 +45,8 @@ private:
 	UFUNCTION()
 	void OnAddFlowFieldButtonClicked();
 
+	UFUNCTION()
+	void OnAddIsoLineButtonClicked();
 	
 	UFlowFieldUIWidget* FlowFieldUIWidgets;
 };

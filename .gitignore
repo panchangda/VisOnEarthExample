@@ -60,6 +60,13 @@ Build/*
 Build/*/**
 !Build/*/PakBlacklist*.txt
 
+# Whitelist for thirdparty libraries
+!Plugins/**/ThirdParty/**/*.dll
+!Plugins/**/ThirdParty/**/*.lib
+!Source/**/ThirdParty/**/*.dll
+!Source/**/ThirdParty/**/*.lib
+
+
 # Don't ignore icon files in Build
 !Build/**/*.ico
 

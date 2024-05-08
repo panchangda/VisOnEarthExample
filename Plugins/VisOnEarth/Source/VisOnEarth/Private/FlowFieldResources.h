@@ -1,8 +1,9 @@
 ﻿#pragma once
-#include "FlowFieldResources.h"
+#include "RenderGraphResources.h"
 
 struct FFlowFieldSettings;
 
+// Vertex Declarations
 struct FLineVertexForInstanceDraw
 {
 	uint32 Flag;
@@ -20,6 +21,33 @@ public:
 		FVertexDeclarationElementList Elements;
 		uint16 Stride = sizeof(FLineVertexForInstanceDraw);
 		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FLineVertexForInstanceDraw, Flag), VET_UInt, 0, Stride));
+		VertexDeclarationRHI = PipelineStateCache::GetOrCreateVertexDeclaration(Elements);
+	}
+
+	void virtual ReleaseRHI() override
+	{
+		VertexDeclarationRHI.SafeRelease();
+	}
+};
+
+
+struct FTriVertexForInstanceDraw
+{
+	FVector4f Vertex;
+};
+class FTriVertexForInstanceDrawDeclaration : public FRenderResource
+{
+public:
+	FVertexDeclarationRHIRef VertexDeclarationRHI;
+	FTriVertexForInstanceDrawDeclaration() = default;
+	FTriVertexForInstanceDrawDeclaration(FTriVertexForInstanceDrawDeclaration&&) = default;
+	virtual ~FTriVertexForInstanceDrawDeclaration() = default;
+
+	void virtual InitRHI(FRHICommandListBase& RHICmdList) override
+	{
+		FVertexDeclarationElementList Elements;
+		uint16 Stride = sizeof(FTriVertexForInstanceDraw);
+		Elements.Add(FVertexElement(0, STRUCT_OFFSET(FTriVertexForInstanceDraw, Vertex), VET_Float4, 0, Stride));
 		VertexDeclarationRHI = PipelineStateCache::GetOrCreateVertexDeclaration(Elements);
 	}
 
@@ -114,6 +142,7 @@ struct FFlowFieldResources
 	FTexture2DRHIRef FlowFieldTexture = nullptr;
 	FBufferRHIRef VertexBuffer = nullptr;
 	FBufferRHIRef IndexBuffer = nullptr;
+	FBufferRHIRef TmpVertexBuffer = nullptr;
 
 	
 	void InitializeVertexIndexBuffer(const FFlowFieldSettings& Settings);

@@ -27,8 +27,7 @@ float HueOffset;
 uint ParticleSum;
 uint TrailLength;
 
-
-const static float ArrowLengthScale = 0.3;
+const static float ArrowLengthScale = 0.7;
 
 float2 RotateVector(float2 vec, float angleInRadians)
 {
@@ -80,12 +79,20 @@ void MainVS(
 	}
 	else if(TrailNumber < TrailLength)	// Other Trails: tmpTrail -> nextTrail 
 	{
+		// if(InFlag == 0) OutPosition = float4(0.0, 0.0, 1.0, 1.0);
+		// else OutPosition = float4(1.0, 1.0, 1.0, 1.0);
+		// VertexOutColor = float4(0.0, 1.0, 0.0, 1.0);
+		// return ;
+		
 		uint tmpTrailIndex = TrailNumber > TrailIndex ? TrailLength + TrailIndex - TrailNumber: TrailIndex - TrailNumber;
 		uint nextTrailIndex = tmpTrailIndex == TrailLength - 1 ? 0 : tmpTrailIndex + 1;
 	
 		float4 tmpTrailPos = TrailPosition[tmpTrailIndex*ParticleSum + Index];
 		float4 nextTrailPos = TrailPosition[nextTrailIndex*ParticleSum + Index];
-		if(tmpTrailPos.w == 0.0 || nextTrailPos.w == 0.0) return;
+		if(tmpTrailPos.w == 0.0 || nextTrailPos.w == 0.0)
+		{
+			return ;
+		}
 		if(InFlag == 0) finalPos = tmpTrailPos.xyz;
 		else if(InFlag == 1) finalPos = nextTrailPos.xyz;
 

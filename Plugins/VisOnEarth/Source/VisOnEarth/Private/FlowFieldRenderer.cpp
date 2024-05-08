@@ -127,6 +127,7 @@ class FDrawLineFromPositionMapVS : public FDrawLineFromPositionMapShader
 class FDrawLineFromPositionMapPS : public FDrawLineFromPositionMapShader
 {
 	DECLARE_GLOBAL_SHADER(FDrawLineFromPositionMapPS);
+	
 	FDrawLineFromPositionMapPS() {}
 	FDrawLineFromPositionMapPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
 		: FDrawLineFromPositionMapShader(Initializer)
@@ -143,6 +144,67 @@ IMPLEMENT_SHADER_TYPE(, FDrawLineFromPositionMapVS, TEXT("/Plugin/VisOnEarth/Pri
 IMPLEMENT_SHADER_TYPE(, FDrawLineFromPositionMapVS, TEXT("/Plugin/VisOnEarth/Private/DrawLineFromPositionMap.usf"), TEXT("MainVS"), SF_Vertex);
 #endif
 IMPLEMENT_SHADER_TYPE(, FDrawLineFromPositionMapPS, TEXT("/Plugin/VisOnEarth/Private/DrawLineFromPositionMap.usf"), TEXT("MainPS"), SF_Pixel);
+
+
+class FDrawLineTest : public FGlobalShader
+{
+public:
+	SHADER_USE_PARAMETER_STRUCT(FDrawLineTest, FGlobalShader)
+	BEGIN_SHADER_PARAMETER_STRUCT(FParameters,)
+		SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
+		SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTextures)
+		SHADER_PARAMETER(FMatrix44f, WorldToClipMatrix)
+		SHADER_PARAMETER(FMatrix44f, ECEFToLocalMatrix)
+		RENDER_TARGET_BINDING_SLOTS()
+	END_SHADER_PARAMETER_STRUCT()
+
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+	{
+		// return EnumHasAllFlags(Parameters.Flags, EShaderPermutationFlags::HasEditorOnlyData) && IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+		return true;
+	}
+};
+
+class FDrawLineTestVS : public FDrawLineTest
+{
+	DECLARE_GLOBAL_SHADER(FDrawLineTestVS);
+	
+public:
+	FDrawLineTestVS() {}
+	FDrawLineTestVS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
+		: FDrawLineTest(Initializer)
+	{
+
+	}
+	
+};
+
+class FDrawLineTestPS : public FDrawLineTest
+{
+	DECLARE_GLOBAL_SHADER(FDrawLineTestPS);
+
+public:
+	FDrawLineTestPS() {}
+	FDrawLineTestPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
+		: FDrawLineTest(Initializer)
+	{
+
+	}
+};
+
+IMPLEMENT_GLOBAL_SHADER(FDrawLineTestVS, "/Plugin/VisOnEarth/Private/DrawLineTest.usf", "MainVS", SF_Vertex)
+IMPLEMENT_GLOBAL_SHADER(FDrawLineTestPS, "/Plugin/VisOnEarth/Private/DrawLineTest.usf", "MainPS", SF_Pixel)
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* FFlowFieldRenderer Initialize Functions */
@@ -255,9 +317,8 @@ void FFlowFieldRenderer::AddDrawLinePass(FPostOpaqueRenderParameters& InParamete
 
 			FGraphicsPipelineStateInitializer GraphicsPSOInit;
 			RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
-			GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_CW, true>::GetRHI();
+			GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None, true>::GetRHI();
 			GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<true, CF_Greater>::GetRHI();
-			// GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
 			GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGBA, BO_Add, BF_SourceAlpha, BF_InverseSourceAlpha>::GetRHI();
 			GraphicsPSOInit.PrimitiveType = PT_LineList;
 			GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GLineVertexForInstanceDrawDeclaration.VertexDeclarationRHI;
@@ -275,9 +336,9 @@ void FFlowFieldRenderer::AddDrawLinePass(FPostOpaqueRenderParameters& InParamete
 			RHICmdList.DrawLineWithWidth(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2), Settings.LineWidth);
 #else
 			RHICmdList.DrawPrimitive(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2));
-			#endif 
+			#endif
 			
-			// RHICmdList.DrawIndexedPrimitive(IndexBuffer,0, 0, 2, 0, 1, ParticleSum*CurrTrailLength);
+			// RHICmdList.DrawIndexedPrimitive(Resources.IndexBuffer, 0, 0, 2, 0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2));
 		});
 }
 // Ugly Implementation: might cause many threads waste at cases
@@ -439,6 +500,74 @@ void FFlowFieldRenderer::AddComputeParticlePSPass(FPostOpaqueRenderParameters& I
 }
 #endif
 
+void FFlowFieldRenderer::AddTestPass(FPostOpaqueRenderParameters& InParameters)
+{
+
+	FRDGBuilder& GraphBuilder = *InParameters.GraphBuilder;
+	const FViewInfo& View = *InParameters.View;
+	// To-Do: Get FeatureLevel From Scene Settings ?
+	const ERHIFeatureLevel::Type FeatureLevel = GMaxRHIFeatureLevel;
+	const FRelativeViewMatrices RelativeMatrices = FRelativeViewMatrices::Create(View.ViewMatrices);
+	
+	RDG_EVENT_SCOPE(GraphBuilder, "AddTestPass");
+	
+	
+	auto* PassParameters = GraphBuilder.AllocParameters<FDrawLineTest::FParameters>();
+	PassParameters->View = InParameters.View->ViewUniformBuffer;
+	PassParameters->SceneTextures = InParameters.SceneTexturesUniformParams;
+	PassParameters->WorldToClipMatrix = FMatrix44f(InParameters.View->ViewMatrices.GetViewProjectionMatrix());
+	PassParameters->ECEFToLocalMatrix = FMatrix44f(GeoReference->ComputeEarthCenteredEarthFixedToUnrealTransformation());
+	
+	PassParameters->RenderTargets[0] = FRenderTargetBinding(InParameters.ColorTexture, ERenderTargetLoadAction::ELoad);
+	PassParameters->RenderTargets.DepthStencil = FDepthStencilBinding(InParameters.DepthTexture, ERenderTargetLoadAction::ELoad, ERenderTargetLoadAction::ELoad, FExclusiveDepthStencil::DepthWrite_StencilWrite);
+
+	
+	const FIntRect ViewportRect = InParameters.ViewportRect;
+	const FIntPoint TextureExtent = InParameters.ColorTexture->Desc.Extent;
+
+
+	
+	GraphBuilder.AddPass(
+		RDG_EVENT_NAME("DrawTestPass"),
+		PassParameters,
+		ERDGPassFlags::Raster,
+		[ViewportRect, PassParameters, FeatureLevel, this] (FRHICommandList& RHICmdList)
+		{
+			RHICmdList.SetViewport(0, 0, 0.0f, ViewportRect.Width(), ViewportRect.Height(), 1.0f);
+			const TShaderMapRef<FDrawLineTestVS> VertexShader(GetGlobalShaderMap(FeatureLevel));
+			const TShaderMapRef<FDrawLineTestPS> PixelShader(GetGlobalShaderMap(FeatureLevel));
+
+			FGraphicsPipelineStateInitializer GraphicsPSOInit;
+			RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+			GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+			GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<true, CF_Greater>::GetRHI();
+			GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+			// GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGBA, BO_Add, BF_SourceAlpha, BF_InverseSourceAlpha>::GetRHI();
+			GraphicsPSOInit.PrimitiveType = PT_LineList;
+			GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GTriVertexForInstanceDrawDeclaration.VertexDeclarationRHI;
+			GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+			GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+			
+			SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+
+			SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), *PassParameters);
+			SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), *PassParameters);
+
+			
+
+			RHICmdList.SetStreamSource(0, Resources.TmpVertexBuffer, 0);
+			RHICmdList.DrawPrimitive(0, 2, 1);
+			// RHICmdList.DrawLineWithWidth(0, 2, 1, 5.0);
+			// Only Available When Using Vulkan RHI Context
+// #if FLOWFIELD_USE_VARIABLE_LINEWIDTH
+// 			RHICmdList.DrawLineWithWidth(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2), Settings.LineWidth);
+// #else
+// 			RHICmdList.DrawPrimitive(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2));
+// 			#endif
+			
+			// RHICmdList.DrawIndexedPrimitive(Resources.IndexBuffer, 0, 0, 2, 0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2));
+		});
+}
 
 
 void FFlowFieldRenderer::Render(FPostOpaqueRenderParameters& InParameters)
@@ -446,10 +575,17 @@ void FFlowFieldRenderer::Render(FPostOpaqueRenderParameters& InParameters)
 
 	if(!Resources.IsValid())
 	{
-		Resources.InitializeFromAnyThread(Settings);
-		Resources.InitializePooledRWBuffers(*InParameters.GraphBuilder, Settings);
+		if(!isInitializing)
+		{
+			Resources.InitializeFromAnyThread(Settings);
+			Resources.InitializePooledRWBuffers(*InParameters.GraphBuilder, Settings);
+			isInitializing = true;
+		}
 		return ;
 	}
+	
+	isInitializing = false;
+
 	if(GeoReference == nullptr) return;
 
 	if(Settings != SettingsFromGame){
@@ -481,6 +617,8 @@ void FFlowFieldRenderer::Render(FPostOpaqueRenderParameters& InParameters)
 	// 2. Generate Color For Particles
 	AddDrawLinePass(InParameters);
 
+	// AddTestPass(InParameters);
+	
 	// Clear All Refs Created By this Frame's GraphBuilder
 	Resources.EndPooledRWBuffersGraphUsage();
 }

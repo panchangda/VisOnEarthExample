@@ -30,8 +30,19 @@ struct FFlowFieldSettings
 	FVector3f SpeedMax = FVector3f(0.0f,0.0f, 0.0f);
 
 	/* Camera/View Related Settings*/
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
+	// FVector2f ViewLonRange = FVector2f(0.0f, 360.0f);
+	//
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
+	// FVector2f ViewLatRange = FVector2f(-90.0f, 90.0f);
+	//
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
+	// FVector2f ViewLevRange = FVector2f(0.0f, 0.0f);
+
+
+	// For Sietium Genbu02
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	FVector2f ViewLonRange = FVector2f(0.0f, 360.0f);
+	FVector2f ViewLonRange = FVector2f(50.0f, 200.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
 	FVector2f ViewLatRange = FVector2f(-90.0f, 90.0f);
@@ -43,7 +54,7 @@ struct FFlowFieldSettings
 	/* Particle Movement Settings */
 	// how fast the particles move.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	float SpeedScaleFactor = 0.01f;
+	float SpeedScaleFactor = 0.03f;
 
 	// how fast the particle trails fade on each frame.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
@@ -63,12 +74,15 @@ struct FFlowFieldSettings
 
 	// Line Width
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	int32 LineWidth = 1.0f;
+	int32 LineWidth = 3.0f;
 
 	// If Draw Arrows For Particles
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
 	bool DrawArrow = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
+	float ArrowLengthScale = 0.7f;
+	
 	/* Color Mapping Settings */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
 	float HueRange = 360.0f;
@@ -81,11 +95,11 @@ struct FFlowFieldSettings
 	FString JsonDataFile = "demo.json";
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Flow Field | Resources Settings")
-	int32 ParticlesSum = 256*256;
+	int32 ParticlesSum = 2048;
 	
 	//drop rate increase relative to individual particle speed.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow Field | Resources Settings")
-	int32 TrailLength = 20;
+	int32 TrailLength = 40;
 
 	// 重载等号运算符以比较两个结构体实例
 	bool operator==(const FFlowFieldSettings& Other) const

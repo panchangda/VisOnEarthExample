@@ -206,12 +206,12 @@ void FFlowFieldResources::InitializeVertexIndexBuffer(const FFlowFieldSettings& 
 		LineVertexArr.SetNumUninitialized(2);
 		LineVertexArr[0] = FLineVertexForInstanceDraw(0);
 		LineVertexArr[1] = FLineVertexForInstanceDraw(1);
-
-
+	
+	
 		FRHIResourceCreateInfo VerticesCreateInfo(TEXT("FlowFieldLineVertexBuffer"), &LineVertexArr);
 		VertexBuffer = RHICmdList.CreateVertexBuffer(LineVertexArr.GetResourceDataSize(), BUF_Static,
 		                                             VerticesCreateInfo);
-
+	
 		TResourceArray<uint32> Indices;
 		Indices.SetNumUninitialized(2);
 		Indices[0] = 0;
@@ -219,7 +219,58 @@ void FFlowFieldResources::InitializeVertexIndexBuffer(const FFlowFieldSettings& 
 		FRHIResourceCreateInfo IndicesCreateInfo(TEXT("FlowFieldLineIndexBuffer"), &Indices);
 		IndexBuffer = RHICmdList.CreateIndexBuffer(sizeof(uint32), Indices.GetResourceDataSize(), BUF_Static,
 		                                           IndicesCreateInfo);
+
+
+		TResourceArray<FTriVertexForInstanceDraw> TmpLineVertexArr;
+		TmpLineVertexArr.SetNumUninitialized(4);
+		TmpLineVertexArr[0] = FTriVertexForInstanceDraw(FVector4f(0.0, 0.0, 1.0, 1.0));
+		TmpLineVertexArr[1] = FTriVertexForInstanceDraw(FVector4f(1.0, 1.0, 1.0, 1.0));
+		TmpLineVertexArr[2] = FTriVertexForInstanceDraw(FVector4f(1.0, 0.0, 1.0, 1.0));
+		TmpLineVertexArr[3] = FTriVertexForInstanceDraw(FVector4f(0.0, 1.0, 1.0, 1.0));
+
+		FRHIResourceCreateInfo TmpVerticesCreateInfo(TEXT("TmpLineVertexBuffer"), &TmpLineVertexArr);
+		TmpVertexBuffer = RHICmdList.CreateVertexBuffer(TmpLineVertexArr.GetResourceDataSize(), BUF_Static,
+		                                                TmpVerticesCreateInfo);
+
+// FRHIResourceCreateInfo VerticesCreateInfo(TEXT("TmpVertexBuffer"));
+// FBufferRHIRef TmpVertexBuffer = RHICmdList.CreateBuffer(
+// 	sizeof(FTriVertexForInstanceDraw) * LineVertexArr.Num(),
+// 	BUF_VertexBuffer | BUF_Static, 0,
+// 	ERHIAccess::VertexOrIndexBuffer, VerticesCreateInfo);
+// void* VoidPtr = RHICmdList.LockBuffer(TmpVertexBuffer, 0,
+// 									  sizeof(FTriVertexForInstanceDraw) * LineVertexArr.Num(),
+// 									  RLM_WriteOnly);
+//
+// FMemory::Memcpy(VoidPtr, LineVertexArr.GetData(), sizeof(FTriVertexForInstanceDraw) * LineVertexArr.Num());
+// RHICmdList.UnlockBuffer(TmpVertexBuffer);
 	});
+
+	// ENQUEUE_RENDER_COMMAND(TestFlowParticlesVertexIndexBuffer)
+	// ([this, Settings](FRHICommandListImmediate& RHICmdList)
+	// {
+	// 	// Initialize Vertex&Index Buffer
+	// 	TResourceArray<FLineVertexForInstanceDraw> LineVertexArr;
+	// 	LineVertexArr.SetNumUninitialized(Settings.ParticlesSum * 2);
+	// 	for (int32 i = 0; i < Settings.ParticlesSum; i++)
+	// 	{
+	// 		LineVertexArr[2 * i] = FLineVertexForInstanceDraw(0);
+	// 		LineVertexArr[2 * i + 1] = FLineVertexForInstanceDraw(1);
+	// 	}
+	//
+	//
+	// 	FRHIResourceCreateInfo VerticesCreateInfo(TEXT("FlowFieldLineVertexBuffer"), &LineVertexArr);
+	// 	VertexBuffer = RHICmdList.CreateVertexBuffer(LineVertexArr.GetResourceDataSize(), BUF_Static,
+	// 	                                             VerticesCreateInfo);
+	//
+	// 	TResourceArray<uint32> Indices;
+	// 	Indices.SetNumUninitialized(2);
+	// 	Indices[0] = 0;
+	// 	Indices[1] = 1;
+	// 	FRHIResourceCreateInfo IndicesCreateInfo(TEXT("FlowFieldLineIndexBuffer"), &Indices);
+	// 	IndexBuffer = RHICmdList.CreateIndexBuffer(sizeof(uint32), Indices.GetResourceDataSize(), BUF_Static,
+	// 	                                           IndicesCreateInfo);
+	// });
+	
 }
 
 
