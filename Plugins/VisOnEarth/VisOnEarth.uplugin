@@ -36,6 +36,18 @@
 				"Android",
 				"IOS"
 			]
+		},
+		{
+			"Name": "VIS4Earth",
+			"Enabled": true,
+			"SupportedTargetPlatforms": [
+				"Win64",
+				"Mac",
+				"Linux",
+				"LinuxArm64",
+				"Android",
+				"IOS"
+			]
 		}
 	]
 }

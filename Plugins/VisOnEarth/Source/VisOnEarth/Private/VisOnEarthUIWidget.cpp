@@ -9,6 +9,8 @@
 
 #include "EngineUtils.h"
 
+#include "MCSActor.h"
+
 
 void UVisOnEarthUIWidget::NativeConstruct()
 {
@@ -38,46 +40,53 @@ void UVisOnEarthUIWidget::OnAddFlowFieldButtonClicked()
 
 void UVisOnEarthUIWidget::OnAddIsoLineButtonClicked()
 {
-	// UWorld* World = GetWorld();
-	// if (World)
-	// {
-	// 	auto IsoLineActor = World->SpawnActor<AMCSActor>(AMCSActor::StaticClass());
-	// 	IsoLineActor->GeoComponent->GeoRef = [&]()-> ACesiumGeoreference* {
-	// 		UWorld* World = GetWorld();
-	// 		if (!IsValid(World))
-	// 			return nullptr;
-	//
-	// 		// Note: The actor iterator will be created with the
-	// 		// "EActorIteratorFlags::SkipPendingKill" flag,
-	// 		// meaning that we don't have to handle objects
-	// 		// that have been deleted. (This is the default,
-	// 		// but made explicit here)
-	// 		ACesiumGeoreference* Georeference = nullptr;
-	// 		EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
-	// 			EActorIteratorFlags::SkipPendingKill;
-	// 		for (TActorIterator<AActor> actorIterator(
-	// 			     World,
-	// 			     ACesiumGeoreference::StaticClass(),
-	// 			     flags);
-	// 		     actorIterator;
-	// 		     ++actorIterator)
-	// 		{
-	// 			AActor* actor = *actorIterator;
-	// 			if (actor->GetLevel() == World->PersistentLevel &&
-	// 				actor->ActorHasTag(FName("DEFAULT_GEOREFERENCE")))
-	// 			{
-	// 				Georeference = Cast<ACesiumGeoreference>(actor);
-	// 				break;
-	// 			}
-	// 		}
-	//
-	// 		return Georeference;
-	// 	}();
-	// 	IsoLineActor->VolumeComponent->LoadRAWVolume();
-	// 	IsoLineActor->VolumeComponent->LoadTF();
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("FlowFieldUIWidget UI Cannot Get World!"));
-	// }
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		auto IsoLineActor = World->SpawnActor<AMCSActor>(AMCSActor::StaticClass());
+		IsoLineActor->GeoComponent->GeoRef = [&]()-> ACesiumGeoreference* {
+			UWorld* World = GetWorld();
+			if (!IsValid(World))
+				return nullptr;
+	
+			// Note: The actor iterator will be created with the
+			// "EActorIteratorFlags::SkipPendingKill" flag,
+			// meaning that we don't have to handle objects
+			// that have been deleted. (This is the default,
+			// but made explicit here)
+			ACesiumGeoreference* Georeference = nullptr;
+			EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
+				EActorIteratorFlags::SkipPendingKill;
+			for (TActorIterator<AActor> actorIterator(
+				     World,
+				     ACesiumGeoreference::StaticClass(),
+				     flags);
+			     actorIterator;
+			     ++actorIterator)
+			{
+				AActor* actor = *actorIterator;
+				if (actor->GetLevel() == World->PersistentLevel &&
+					actor->ActorHasTag(FName("DEFAULT_GEOREFERENCE")))
+				{
+					Georeference = Cast<ACesiumGeoreference>(actor);
+					break;
+				}
+			}
+	
+			return Georeference;
+		}();
+
+		IsoLineActor->HeightRange = {0,49};
+		IsoLineActor->IsoValue = 180.f;
+
+		IsoLineActor->VolumeComponent->ImportVoxelType=ESupportedVoxelType::UInt8;
+		IsoLineActor->VolumeComponent->ImportVolumeDimension={300,350,50};
+		IsoLineActor->VolumeComponent->LoadRAWVolume();
+		
+		IsoLineActor->VolumeComponent->LoadTF();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FlowFieldUIWidget UI Cannot Get World!"));
+	}
 }

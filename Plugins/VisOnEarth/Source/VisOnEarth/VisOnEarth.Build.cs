@@ -17,6 +17,9 @@ public class VisOnEarth : ModuleRules
 		PublicDefinitions.Add("FLOWFIELD_USE_VARIABLE_LINEWIDTH = true");
 		PublicDefinitions.Add("FLOWFIELD_USE_INDIRECT_DRAW = false");
 
+		PublicDefinitions.Add("GXX_ENABLE_RTTI");
+		bUseRTTI = true;
+		bEnableExceptions = true;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
@@ -50,8 +53,9 @@ public class VisOnEarth : ModuleRules
 				// For UI
 				"UMG",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
 				// ... add other public dependencies that you statically link with here ...
+				"VIS4Earth"
 			}
 			);
 			
@@ -75,6 +79,7 @@ public class VisOnEarth : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+		
 		// string libPrefix;
 		// string libPostfix;
 		// string platform;
