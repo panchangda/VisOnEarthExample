@@ -16,10 +16,7 @@ public class VisOnEarth : ModuleRules
 		PublicDefinitions.Add("FLOWFIELD_USE_COMPUTE = true");
 		PublicDefinitions.Add("FLOWFIELD_USE_VARIABLE_LINEWIDTH = true");
 		PublicDefinitions.Add("FLOWFIELD_USE_INDIRECT_DRAW = false");
-
-		PublicDefinitions.Add("GXX_ENABLE_RTTI");
-		bUseRTTI = true;
-		bEnableExceptions = true;
+		
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
