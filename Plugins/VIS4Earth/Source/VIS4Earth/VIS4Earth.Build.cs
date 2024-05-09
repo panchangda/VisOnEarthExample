@@ -44,7 +44,8 @@ public class VIS4Earth : ModuleRules
 			{
 				"Slate",
 				"SlateCore",
-				"UMG"
+				"UMG",
+				"Projects"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

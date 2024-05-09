@@ -11,6 +11,13 @@ public class VisOnEarth : ModuleRules
 {
 	public VisOnEarth(ReadOnlyTargetRules Target) : base(Target)
 	{
+		// To Avoid Cesium Package Error
+		if (Target.Platform == UnrealTargetPlatform.Android || 
+		    Target.Platform == UnrealTargetPlatform.LinuxArm64)
+		{
+			bEnableExceptions = true;
+		}
+		
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicDefinitions.Add("FLOWFIELD_USE_COMPUTE = true");

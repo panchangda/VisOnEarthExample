@@ -42,7 +42,7 @@ struct FFlowFieldSettings
 
 	// For Sietium Genbu02
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	FVector2f ViewLonRange = FVector2f(50.0f, 200.0f);
+	FVector2f ViewLonRange = FVector2f(30.0f, 200.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
 	FVector2f ViewLatRange = FVector2f(-90.0f, 90.0f);

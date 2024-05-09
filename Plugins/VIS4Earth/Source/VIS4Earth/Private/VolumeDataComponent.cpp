@@ -5,25 +5,29 @@
 
 #include "DesktopPlatformModule.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
 void UVolumeDataComponent::LoadRAWVolume() {
-    FJsonSerializableArray files;
-    FDesktopPlatformModule::Get()->OpenFileDialog(
-        nullptr, TEXT("Select a RAW Volume file"), FPaths::GetProjectFilePath(), TEXT(""),
-        TEXT("Volume|*.raw;*.bin;*.RAW"), EFileDialogFlags::None, files);
-    if (files.IsEmpty())
-        return;
+    FString PluginDir = IPluginManager::Get().FindPlugin(TEXT("VisOnEarth"))->GetBaseDir();
+    FString DataFilePath = FPaths::Combine(*PluginDir, FString::Format(TEXT("Resources/NCData/{0}"), {"OSS000.raw"}));
+    // FJsonSerializableArray files;
+    // FDesktopPlatformModule::Get()->OpenFileDialog(
+    //     nullptr, TEXT("Select a RAW Volume file"), FPaths::GetProjectFilePath(), TEXT(""),
+    //     TEXT("Volume|*.raw;*.bin;*.RAW"), EFileDialogFlags::None, files);
+    //
+    // if (files.IsEmpty())
+    //     return;
 
     auto volume = keepVolumeInCPU ? VolumeData::LoadFromFile({.VoxTy = ImportVoxelType,
                                                               .Axis = ImportVolumeTransformedAxis,
                                                               .Dimension = ImportVolumeDimension,
-                                                              .FilePath = {files[0]}},
+                                                              .FilePath = {DataFilePath}},
                                                              std::reference_wrapper(volumeCPUData))
                                   : VolumeData::LoadFromFile({.VoxTy = ImportVoxelType,
                                                               .Axis = ImportVolumeTransformedAxis,
                                                               .Dimension = ImportVolumeDimension,
-                                                              .FilePath = {files[0]}});
+                                                              .FilePath = {DataFilePath}});
     if (volume.IsType<FString>()) {
         auto &errMsg = volume.Get<FString>();
         processError(errMsg);
@@ -41,14 +45,16 @@ void UVolumeDataComponent::LoadRAWVolume() {
 }
 
 void UVolumeDataComponent::LoadTF() {
-    FJsonSerializableArray files;
-    FDesktopPlatformModule::Get()->OpenFileDialog(nullptr, TEXT("Select a Transfer Function file"),
-                                                  FPaths::GetProjectFilePath(), TEXT(""),
-                                                  TEXT("TF|*.txt"), EFileDialogFlags::None, files);
-    if (files.IsEmpty())
-        return;
+    FString PluginDir = IPluginManager::Get().FindPlugin(TEXT("VisOnEarth"))->GetBaseDir();
+    FString DataFilePath = FPaths::Combine(*PluginDir, FString::Format(TEXT("Resources/NCData/{0}"), {"oss_tf.txt"}));
+    // FJsonSerializableArray files;
+    // FDesktopPlatformModule::Get()->OpenFileDialog(nullptr, TEXT("Select a Transfer Function file"),
+    //                                               FPaths::GetProjectFilePath(), TEXT(""),
+    //                                               TEXT("TF|*.txt"), EFileDialogFlags::None, files);
+    // if (files.IsEmpty())
+    //     return;
 
-    auto tf = TransferFunctionData::LoadFromFile({.FilePath = {files[0]}});
+    auto tf = TransferFunctionData::LoadFromFile({.FilePath = {DataFilePath}});
     if (tf.IsType<FString>()) {
         auto &errMsg = tf.Get<FString>();
         processError(errMsg);

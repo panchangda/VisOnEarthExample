@@ -20,6 +20,9 @@ class VISONEARTH_API AVisOnEarthGameMode : public AGameModeBase
 public:
 	AVisOnEarthGameMode();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3DTileset")
+	TSoftObjectPtr<class ACesium3DTileset> Terrain;
+
 protected:
 	virtual void BeginPlay()override;
 	virtual void Tick(float DeltaSeconds)override;
