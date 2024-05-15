@@ -1,0 +1,15 @@
+{
+    "Dimension": {
+        "Lon": 1440,
+        "Lat": 720,
+        "Lev": 75
+    },
+    "Range": {
+        "LonMin": 0.125,
+        "LonMax": 359.875,
+        "LatMin": -89.875,
+        "LatMax": 89.875,
+        "LevMin": 2.5,
+        "LevMax": 14820.5
+    }
+}

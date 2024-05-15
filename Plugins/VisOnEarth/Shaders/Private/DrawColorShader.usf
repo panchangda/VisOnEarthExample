@@ -1,0 +1,21 @@
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/Common.ush"
+
+float4 SimpleColor;
+
+void MainVS(
+	in float2 ViewportUV : ATTRIBUTE0,
+	in float2 UV			: ATTRIBUTE1,
+	out float4 OutPosition	: SV_POSITION
+ )
+{
+	// screenspace position from vb
+    OutPosition = float4(ViewportUVToScreenPos(ViewportUV), 0, 1);
+}
+
+void MainPS(
+	out float4 OutColor : SV_Target0
+	)
+{
+	OutColor = SimpleColor;
+}

@@ -1,0 +1,56 @@
+﻿
+
+static const float EarthLong = 6378137.f;
+static const float EarthShort = 6356752.314f;
+static const float EarthLongOverShort = EarthLong / EarthShort;
+static const float EarthShortOverLong = EarthShort / EarthLong;
+static const float EarthShortOverLongSqr = EarthShortOverLong * EarthShortOverLong;
+static const float EarthShortOverLongSqrMinusOne = EarthShortOverLongSqr - 1.f;
+
+float3 BLHToECEF(in float3 BLH) {
+	float3 ret;
+	ret.z = EarthShortOverLong * BLH.z * sin(BLH.y);
+	float cosL = cos(BLH.y);
+	ret.x = BLH.z * cosL * cos(BLH.x);
+	ret.y = BLH.z * cosL * sin(BLH.x);
+    
+	return ret;
+}
+
+float3 ECEFToBLH(in float3 pos) {
+	float3 ret;
+	ret.x = atan2(pos.y, pos.x);
+	ret.z = length(pos);
+	ret.y = asin(EarthLongOverShort * pos.z / ret.z);
+    
+	return ret;
+}
+
+float HeightToCenter(in float heightToCntrEarthLong, in float latitude) {
+	float sinL = sin(latitude);
+	return heightToCntrEarthLong * sqrt(1.f + EarthShortOverLongSqrMinusOne * sinL * sinL);
+}
+
+float3 ECEFPositionToLocal(in float3 ecefPosition, in float4x4 ecefToLocal)
+{
+	return  mul( float4(ecefPosition, 1.0), ecefToLocal).xyz;
+}
+
+float3 LatLonAltToSphere(float lat, float lon, float alt) {
+	// 地球半径，单位为米
+	// float EarthRadius = 6371000.0;
+	float EarthRadius = 1000.0;
+	// 将经纬度转换为弧度
+	float latitudeRadians = lat * (3.14159265358979323846 / 180.0);
+	float longitudeRadians = lon * (3.14159265358979323846 / 180.0);
+
+	// 根据经纬度和高度计算球面坐标
+	float x = (EarthRadius + alt) * cos(latitudeRadians) * cos(longitudeRadians);
+	float y = (EarthRadius + alt) * cos(latitudeRadians) * sin(longitudeRadians);
+	float z = (EarthRadius + alt) * sin(latitudeRadians);
+
+	return float3(x, y, z);
+}
+
+
+
