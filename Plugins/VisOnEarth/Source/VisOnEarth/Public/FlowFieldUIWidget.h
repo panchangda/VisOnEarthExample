@@ -30,13 +30,6 @@ protected:
 	virtual void NativeConstruct() override;
 
 private:
-	
-	UPROPERTY(meta = (BindWidget))
-	class UCanvasPanel* MainCanvasPanel;
-	
-	UPROPERTY(meta = (BindWidget))
-	class UVerticalBox* MainVerticalBox;
-	
 
 	UPROPERTY(meta = (BindWidget))
 	USliderWithEditableTextUIWidget* LineWidthComponent;

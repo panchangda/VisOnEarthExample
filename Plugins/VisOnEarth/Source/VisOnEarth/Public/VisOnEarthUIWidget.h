@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "VisOnEarthUIWidget.generated.h"
 
+class ULICUIWidget;
 class UFlowFieldUIWidget;
 class AFlowFieldActor;
 /**
@@ -40,6 +41,9 @@ private:
 	class UButton* AddIsoLineButton;
 
 	UPROPERTY(meta = (BindWidget))
+	class UButton* AddVortexButton;
+	
+	UPROPERTY(meta = (BindWidget))
 	class UScrollBox* VisOptionScrollBox;
 
 	UFUNCTION()
@@ -50,9 +54,9 @@ private:
 
 	UFUNCTION()
 	void OnAddLICButtonClicked();
-
+	
+	UFUNCTION()
+	void OnAddVortexButtonClicked();
 	
 	UFlowFieldUIWidget* FlowFieldUIWidgets;
-
-	U
 };

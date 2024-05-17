@@ -14,7 +14,7 @@ public class VisOnEarth : ModuleRules
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicDefinitions.Add("FLOWFIELD_USE_COMPUTE = true");
-		PublicDefinitions.Add("FLOWFIELD_USE_VARIABLE_LINEWIDTH = true");
+		PublicDefinitions.Add("FLOWFIELD_USE_VARIABLE_LINEWIDTH = false");
 		PublicDefinitions.Add("FLOWFIELD_USE_INDIRECT_DRAW = false");
 
 		
@@ -63,7 +63,8 @@ public class VisOnEarth : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"Projects"
+				"Projects", 
+				"ProceduralMeshComponent"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

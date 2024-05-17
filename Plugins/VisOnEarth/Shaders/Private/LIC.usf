@@ -1,0 +1,121 @@
+﻿
+
+float GetWindowCoef(int i, int isSingleMoving, float phi, int T)
+{
+	if (isSingleMoving == 0.0)
+		return 1;
+	return 1 + sin(2 * PI * (i + phi) / T) / 2;
+}
+
+float GetHueByVector(float2 v)
+{
+	return (atan2(v.y, v.x) / PI + 1) * 180;
+}
+
+float3 HsvToRgb(float3 hsv)
+{
+	int H = (int(hsv.x)) % 360;
+	float S = hsv.y;
+	float V = hsv.z;
+	int Hi = (H / 60) % 6;
+	float f = (H / 60.0) - Hi;
+	float p = V * (1 - S);
+	float q = V * (1 - f * S);
+	float t = V * (1 - (1 - f) * S);
+	float R, G, B;
+	switch (Hi) {
+	case 0:
+		R = V; G = t; B = p; break;
+	case 1:
+		R = q; G = V; B = p; break;
+	case 2:
+		R = p; G = V; B = t; break;
+	case 3:
+		R = p; G = q; B = V; break;
+	case 4:
+		R = t; G = p; B = V; break;
+	case 5:
+		R = V; G = p; B = q; break;
+	}
+	return float3(R, G, B);
+}
+
+float4 LICMain(Texture2D velocityTex, SamplerState velocityTexSampler,
+	Texture2D noiseTex, SamplerState noiseTexSampler,
+	float2 texCoord, float2 texSize,
+	float isSingleMoving, float isUniformColor,
+	float T, float phi
+	)
+{
+	float2 velocity = velocityTex.Sample(velocityTexSampler, texCoord).xy;
+	float alpha = 0.7;
+	if(velocity.x>10.0 || velocity.y > 10.0) alpha = 0.0;
+	// velocity.x = velocity.x * 2 - 1;
+	// velocity.y = velocity.y * 2 - 1;
+	// if (velocityTex.Sample(velocityTexSampler, texCoord).z > 0.5)
+	// 	discard;
+
+
+	float windowCoef = GetWindowCoef(0, isSingleMoving, phi, T);
+	float Fsum = windowCoef * noiseTex.Sample( noiseTexSampler, texCoord).x;
+	float count = windowCoef;
+	float2 temptexCoord = texCoord;
+
+
+
+	
+	for (int i = 0; i < 64; i++)
+	{
+		float2 dir = velocityTex.Sample(velocityTexSampler, temptexCoord).xy;
+
+		// dir.x = dir.x * 2 - 1;
+		// dir.y = dir.y * 2 - 1;
+		if (velocityTex.Sample(velocityTexSampler, temptexCoord).x > 10 || velocityTex.Sample(velocityTexSampler, temptexCoord).y > 10)
+			break;
+
+		dir = normalize(dir);
+		temptexCoord += float2(dir.x / texSize.x, dir.y / texSize.y);
+		if (temptexCoord.x > 1 || temptexCoord.x < 0 || temptexCoord.y > 1 || temptexCoord.y < 0)
+			break;
+		windowCoef = GetWindowCoef(i, isSingleMoving, phi, T);
+		Fsum += windowCoef * noiseTex.Sample( noiseTexSampler, temptexCoord).x;
+		count += windowCoef;
+	}
+
+	temptexCoord = texCoord;
+
+	for (int i = 0; i < 64; i++)
+	{
+		float2 dir = velocityTex.Sample(velocityTexSampler, temptexCoord).xy;
+
+		// dir.x = dir.x * 2 - 1;
+		// dir.y = dir.y * 2 - 1;
+		if (velocityTex.Sample(velocityTexSampler, temptexCoord).x > 10 || velocityTex.Sample(velocityTexSampler, temptexCoord).y > 10)
+			break;
+
+		dir = normalize(dir);
+		temptexCoord += float2(dir.x / texSize.x, dir.y / texSize.y);
+		if (temptexCoord.x > 1 || temptexCoord.x < 0 || temptexCoord.y > 1 || temptexCoord.y < 0)
+			break;
+		windowCoef = GetWindowCoef(i, isSingleMoving, phi, T);
+		Fsum += windowCoef * noiseTex.Sample( noiseTexSampler, temptexCoord).x;
+		count += windowCoef;
+	}
+
+	Fsum /= count;
+
+	// Strengthen the line
+	//Fsum = Fsum * 4 - 1.25;
+
+	if (isUniformColor == 1)
+	{
+		return float4(float3(1,1,1) * Fsum, alpha);
+	}
+	else
+	{
+		float hue = GetHueByVector(velocity);
+		float3 color = HsvToRgb(float3(hue, 0.75, 1));
+		return float4(color * Fsum, alpha);
+	}
+}
+

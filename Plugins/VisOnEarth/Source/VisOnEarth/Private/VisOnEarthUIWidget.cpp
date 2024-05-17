@@ -8,6 +8,9 @@
 #include "Components/ScrollBoxSlot.h"
 
 #include "EngineUtils.h"
+#include "LICUIWidget.h"
+#include "VortexActor.h"
+#include "VortexUIWidget.h"
 
 
 void UVisOnEarthUIWidget::NativeConstruct()
@@ -15,6 +18,8 @@ void UVisOnEarthUIWidget::NativeConstruct()
 	Super::NativeConstruct();
 	AddFlowFieldButton->OnClicked.AddDynamic(this, &UVisOnEarthUIWidget::OnAddFlowFieldButtonClicked);
 	AddIsoLineButton->OnClicked.AddDynamic(this, &UVisOnEarthUIWidget::OnAddIsoLineButtonClicked);
+	AddLICButton->OnClicked.AddDynamic(this, &UVisOnEarthUIWidget::OnAddLICButtonClicked);
+	AddVortexButton->OnClicked.AddDynamic(this, &UVisOnEarthUIWidget::OnAddVortexButtonClicked);
 }
 
 void UVisOnEarthUIWidget::OnAddFlowFieldButtonClicked()
@@ -34,6 +39,28 @@ void UVisOnEarthUIWidget::OnAddFlowFieldButtonClicked()
 		UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(FlowFieldUIWidgets));
 		ScrollBoxSlot->SetPadding(FMargin(10.0f, 10.0f, 10.0f, 10.0f));
 	}
+}
+
+void UVisOnEarthUIWidget::OnAddLICButtonClicked()
+{
+	// Initialize UI Widget
+	UClass* BP_LICUI = LoadClass<ULICUIWidget>(
+		nullptr, TEXT("/VisOnEarth/BP_LICUI.BP_LICUI_C"));
+	ULICUIWidget* LICUI = CreateWidget<ULICUIWidget>(GetWorld(), BP_LICUI);
+
+	UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(LICUI));
+	ScrollBoxSlot->SetPadding(FMargin(10.0f, 10.0f, 10.0f, 10.0f));
+}
+
+void UVisOnEarthUIWidget::OnAddVortexButtonClicked()
+{
+	// Initialize UI Widget
+	UClass* UIBPClass = LoadClass<UVortexUIWidget>(
+		nullptr, TEXT("/VisOnEarth/BP_VortexUI.BP_VortexUI_C"));
+	UVortexUIWidget* UIWidget = CreateWidget<UVortexUIWidget>(GetWorld(), UIBPClass);
+
+	UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(UIWidget));
+	ScrollBoxSlot->SetPadding(FMargin(10.0f, 10.0f, 10.0f, 10.0f));
 }
 
 void UVisOnEarthUIWidget::OnAddIsoLineButtonClicked()
