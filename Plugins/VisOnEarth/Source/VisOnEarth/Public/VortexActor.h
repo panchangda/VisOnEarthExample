@@ -32,8 +32,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Vortex Rendering")
 	FVector2D LevRange = FVector2D(1000, 1000);
 	UPROPERTY(EditAnywhere, Category = "Vortex Rendering")
-	float DefaultHeight = 1000.0f;
-	UPROPERTY(EditAnywhere, Category = "Vortex Rendering")
 	int LongitudeNum = 205;
 	UPROPERTY(EditAnywhere, Category = "Vortex Rendering")
 	int LatitudeNum = 249;

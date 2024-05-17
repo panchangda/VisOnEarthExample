@@ -42,7 +42,8 @@ void AVortexActor::BeginPlay()
     for(int i=0;i<VortexPoint3D.Num();i++)
     {
         VortexPoint3D[i] = DefaultGeoReference->TransformLongitudeLatitudeHeightPositionToUnreal(
-            FVector(VortexPoint[i].X + 180.0, VortexPoint[i].Y, DefaultHeight));
+            NormalizedToRanged(LonRange, LatRange, LevRange,
+                FVector(VortexPoint[i].X/ LongitudeNum, VortexPoint[i].Y/LatitudeNum, 0.0)));
     }
     SpawnSpheresAtLocations(VortexPoint3D, DefaultVortexMaterial);
 }
