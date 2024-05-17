@@ -40,7 +40,7 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, Category = "Vortex Rendering")
-	FVector SphereScaleCoef = FVector(1000000.0f);
+	FVector SphereScaleCoef = FVector(500000.0f);
 	
 	
 	UPROPERTY(EditAnywhere, Category="Vortex Rendering")

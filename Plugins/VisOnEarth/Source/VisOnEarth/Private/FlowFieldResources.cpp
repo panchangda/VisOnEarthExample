@@ -277,7 +277,7 @@ void FFlowFieldResources::InitializeVertexIndexBuffer(const FFlowFieldSettings& 
 	
 }
 
-UVolumeTexture* ConvertFloat32ToVolumeTexture(const FieldData& InData)
+static UVolumeTexture* ConvertFloat32ToVolumeTexture(const FieldData& InData)
 {
 	if(InData.DataType!= FieldDataDimension::D3 || InData.VolumeValues.Num() == 0 )
 		return nullptr;
@@ -308,7 +308,7 @@ UVolumeTexture* ConvertFloat32ToVolumeTexture(const FieldData& InData)
 	delete []datas;
 	return temp;
 }
-UTexture2D* Convert2DFieldDataToTexture2D(const FieldData& InData)
+static UTexture2D* Convert2DFieldDataToTexture2D(const FieldData& InData)
 {
 	if(InData.DataType!= FieldDataDimension::D2 || InData.TextureValues.Num() == 0)
 		return nullptr;
@@ -341,7 +341,7 @@ UTexture2D* Convert2DFieldDataToTexture2D(const FieldData& InData)
 	delete []datas;
 	return temp;
 }
-UTexture2D* ConvertFloat32ToUTexture2D(const TArray<float>& UValue, const TArray<float>& VValue, const TArray<float>& WValue, int width, int height) {
+static UTexture2D* ConvertFloat32ToUTexture2D(const TArray<float>& UValue, const TArray<float>& VValue, const TArray<float>& WValue, int width, int height) {
 	if (UValue.IsEmpty() || VValue.IsEmpty() || WValue.IsEmpty()) return nullptr;
 
 	FFloat32* datas = new FFloat32[height * width * 4];
