@@ -43,7 +43,8 @@ void AVortexActor::BeginPlay()
     {
         VortexPoint3D[i] = DefaultGeoReference->TransformLongitudeLatitudeHeightPositionToUnreal(
             NormalizedToRanged(LonRange, LatRange, LevRange,
-                FVector(VortexPoint[i].X/ LongitudeNum, VortexPoint[i].Y/LatitudeNum, 0.0)));
+                // Strange Divide: Copy From previous osg vertex implementation
+                FVector(  VortexPoint[i].Y / LongitudeNum, VortexPoint[i].X / LatitudeNum, 0.0)));
     }
     SpawnSpheresAtLocations(VortexPoint3D, DefaultVortexMaterial);
 }
@@ -74,12 +75,13 @@ TArray<FVector2D> AVortexActor::InitializeData()
 	FlowFieldTexture2D = ConvertFloat32ToUTexture2D(UValues, VValues, WValues, LongitudeNum, LatitudeNum);
 
 	TArray<FVector2D> _VortexData;
-    _VortexData.SetNum(LongitudeNum* LatitudeNum);
-	for(int i=0;i<LongitudeNum*LatitudeNum;i++)
-	{
-		_VortexData[i] = FVector2D(UValues[i], VValues[i]);
-	}
+    _VortexData.SetNum( LongitudeNum* LatitudeNum);
+    for(int i = 0 ; i < _VortexData.Num(); i++)
+    {
+        _VortexData[i] =  FVector2D(UValues[i], VValues[i]);
+    }
 	return _VortexData;
+    
 }
 
 

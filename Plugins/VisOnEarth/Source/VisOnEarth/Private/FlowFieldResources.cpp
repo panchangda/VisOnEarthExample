@@ -341,35 +341,35 @@ static UTexture2D* Convert2DFieldDataToTexture2D(const FieldData& InData)
 	delete []datas;
 	return temp;
 }
-static UTexture2D* ConvertFloat32ToUTexture2D(const TArray<float>& UValue, const TArray<float>& VValue, const TArray<float>& WValue, int width, int height) {
-	if (UValue.IsEmpty() || VValue.IsEmpty() || WValue.IsEmpty()) return nullptr;
-
-	FFloat32* datas = new FFloat32[height * width * 4];
-
-	for (auto it = 0; it < width*height; ++it) {
-		auto idx = it * 4;
-		datas[idx] = FFloat32(UValue[it]);     // R
-		datas[idx + 1] = FFloat32(VValue[it]); // G
-		datas[idx + 2] = FFloat32(WValue[it]); // B
-		datas[idx + 3] = FFloat32(1.0f); // A，假设Alpha通道完全不透明
-	}
-	
-	UTexture2D* temp = UTexture2D::CreateTransient(width, height, PF_A32B32G32R32F);
-	temp->Filter = TF_Bilinear;
-#if WITH_EDITORONLY_DATA
-	temp->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-	temp->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-#endif // WITH_EDITORONLY_DATA
-	// void* TextureData = temp->Source.LockMip(0);
-	void* TextureData = temp->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-	FMemory::Memmove(TextureData, datas, height * width * 4 * sizeof(FFloat32));
-	temp->GetPlatformData()->Mips[0].BulkData.Unlock();
-	// temp->Source.UnlockMip(0);
-	// 更新纹理数据
-	temp->UpdateResource();
-	delete []datas;
-	return temp;
-}
+// static UTexture2D* ConvertFloat32ToUTexture2D(const TArray<float>& UValue, const TArray<float>& VValue, const TArray<float>& WValue, int width, int height) {
+// 	if (UValue.IsEmpty() || VValue.IsEmpty() || WValue.IsEmpty()) return nullptr;
+//
+// 	FFloat32* datas = new FFloat32[height * width * 4];
+//
+// 	for (auto it = 0; it < width*height; ++it) {
+// 		auto idx = it * 4;
+// 		datas[idx] = FFloat32(UValue[it]);     // R
+// 		datas[idx + 1] = FFloat32(VValue[it]); // G
+// 		datas[idx + 2] = FFloat32(WValue[it]); // B
+// 		datas[idx + 3] = FFloat32(1.0f); // A，假设Alpha通道完全不透明
+// 	}
+// 	
+// 	UTexture2D* temp = UTexture2D::CreateTransient(width, height, PF_A32B32G32R32F);
+// 	temp->Filter = TF_Bilinear;
+// #if WITH_EDITORONLY_DATA
+// 	temp->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+// 	temp->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+// #endif // WITH_EDITORONLY_DATA
+// 	// void* TextureData = temp->Source.LockMip(0);
+// 	void* TextureData = temp->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+// 	FMemory::Memmove(TextureData, datas, height * width * 4 * sizeof(FFloat32));
+// 	temp->GetPlatformData()->Mips[0].BulkData.Unlock();
+// 	// temp->Source.UnlockMip(0);
+// 	// 更新纹理数据
+// 	temp->UpdateResource();
+// 	delete []datas;
+// 	return temp;
+// }
 // use TVariant<UTexture2D, UVolumeTexture> ?
 void FFlowFieldResources::InitializeFlowFieldTexture(FFlowFieldSettings& Settings)
 {
