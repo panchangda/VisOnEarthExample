@@ -376,9 +376,10 @@ void FFlowFieldRenderer::AddDrawLinePass(FPostOpaqueRenderParameters& InParamete
 			SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), *PassParameters);
 			
 			RHICmdList.SetStreamSource(0, Resources.VertexBuffer, 0);
+			int ArrowInstanceCount = Settings.DrawArrow ? 2 : 0; // left + right = 2 instance
 			// Only Available When Using Vulkan RHI Context
 #if FLOWFIELD_USE_VARIABLE_LINEWIDTH
-			RHICmdList.DrawLineWithWidth(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2), Settings.LineWidth);
+			RHICmdList.DrawLineWithWidth(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + ArrowInstanceCount), Settings.LineWidth);
 #else
 			RHICmdList.DrawPrimitive(0, 1, Settings.ParticlesSum * (1 + Settings.TrailLength + 2));
 			#endif

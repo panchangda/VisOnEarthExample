@@ -54,15 +54,15 @@ struct FFlowFieldSettings
 	/* Particle Movement Settings */
 	// how fast the particles move.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	float SpeedScaleFactor = 2.03f;
+	float SpeedScaleFactor = 0.53f;
 
 	// how fast the particle trails fade on each frame.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	float TrailFadeOpacity = 1.0f;
+	float TrailFadeOpacity = 0.97f;
 
 	//when the opacity is less than, particles fade out.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	float FadeOutOpacity = 0.01f;
+	float FadeOutOpacity = 0.03f;
 
 	//how often the particles move to a random place.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow Field | Settings")
@@ -92,15 +92,15 @@ struct FFlowFieldSettings
 	
 	/* Below Settings could trigger resources update */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow Field | Resources Settings")
-	// FString JsonDataFile = "dataset-omega-3d-rep-weekly_20180103T0000Z_P20200331T0000Z";
-	FString JsonDataFile = "demo";
+	FString JsonDataFile = "dataset-omega-3d-rep-weekly_20180103T0000Z_P20200331T0000Z";
+	// FString JsonDataFile = "demo";
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Flow Field | Resources Settings")
-	int32 ParticlesSum = 1024*1024;
+	int32 ParticlesSum = 256*256;
 	
 	//drop rate increase relative to individual particle speed.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow Field | Resources Settings")
-	int32 TrailLength = 50;
+	int32 TrailLength = 100;
 
 	// 重载等号运算符以比较两个结构体实例
 	bool operator==(const FFlowFieldSettings& Other) const

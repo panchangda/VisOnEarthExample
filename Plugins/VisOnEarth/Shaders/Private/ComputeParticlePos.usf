@@ -171,6 +171,12 @@ float3 calculateSpeed3D(float3 LonLatLev, float SpeedScaleFactor, float2 LonRang
 	return speed;
 }
 
+float3 NormalizeLonLatLevByRange(float3 LonLatLev, float2 LonRange, float2 LatRange, float2 LevRange)
+{
+	return float3((LonLatLev.x - LonRange.x) / (LonRange.y - LonRange.x ),
+		(LonLatLev.y - LatRange.x) / (LatRange.y - LatRange.x ),
+		(LonLatLev.z - LevRange.x) / (LevRange.y - LevRange.x ));
+}
 [numthreads(1, 1, 1)]
 void MainCS_3D(
 	uint3 GroupId : SV_GroupID,
@@ -217,12 +223,14 @@ void MainCS_3D(
 		|| nextPos.x > LonRange.y || nextPos.x < LonRange.x || nextPos.y > LatRange.y || nextPos.y < LatRange.x || nextPos.z > LevRange.y || nextPos.z < LevRange.x
 		|| speed.x < -10.0 || speed.y < - 10.0 || speed.z < -10.0)
 	{
+		float3 tmpNormalizedPos = NormalizeLonLatLevByRange(currPos, LonRange, LatRange, LevRange);
+		
 		if(speed.x < -10.0 || speed.y < -10.0 || speed.z < -10.0)
 		{
-			currPos.xyz = GenerateRandomParticle(currPos.yz,  currPos.xz, currPos.xy, LonRange, LatRange, LevRange);
+			currPos.xyz = GenerateRandomParticle(tmpNormalizedPos.yz,  tmpNormalizedPos.xz, tmpNormalizedPos.xy, LonRange, LatRange, LevRange);
 		}else
 		{
-			currPos.xyz = GenerateRandomParticle(currPos.xy,  currPos.yz + speed.xz*10.0, currPos.xz + speed.xy*10.0, LonRange, LatRange, LevRange);	
+			currPos.xyz = GenerateRandomParticle(tmpNormalizedPos.xy,  tmpNormalizedPos.yz + speed.xz*10.0, tmpNormalizedPos.xz + speed.xy*10.0, LonRange, LatRange, LevRange);	
 		}
 		
 		speedValidBit = 0.0;
