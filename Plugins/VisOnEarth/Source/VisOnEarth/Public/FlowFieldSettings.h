@@ -54,7 +54,7 @@ struct FFlowFieldSettings
 	/* Particle Movement Settings */
 	// how fast the particles move.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
-	float SpeedScaleFactor = 0.53f;
+	float SpeedScaleFactor = 0.03f;
 
 	// how fast the particle trails fade on each frame.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")

@@ -457,6 +457,8 @@ bool FFlowFieldResources::LoadBinary(FieldData& InFieldData, const FString& File
 			TArray<FVector3f> VArray;
 			VArray.SetNum(VolumePixelCount);
 
+
+			// Reverse X & Y
 			for (int i = 0; i < VolumePixelCount; i++)
 			{
 				int index = 3 * i;

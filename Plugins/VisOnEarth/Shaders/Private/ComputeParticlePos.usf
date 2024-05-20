@@ -166,7 +166,9 @@ SamplerState FlowFieldTexture3DSampler;
 float3 calculateSpeed3D(float3 LonLatLev, float SpeedScaleFactor, float2 LonRange, float2 LatRange, float2 LevRange)
 {
 	const float h = 0.4;
-	float3 f_n = FlowFieldTexture3D.SampleLevel(FlowFieldTexture3DSampler, LonLatLevToUVW(LonLatLev, LonRange, LatRange, LevRange), 0).xyz;
+	float3 UVW = LonLatLevToUVW(LonLatLev, LonRange, LatRange, LevRange);
+	UVW.x += 0.5;
+	float3 f_n = FlowFieldTexture3D.SampleLevel(FlowFieldTexture3DSampler, UVW, 0).xyz;
 	float3 speed = h * f_n * SpeedScaleFactor;
 	return speed;
 }
@@ -177,6 +179,15 @@ float3 NormalizeLonLatLevByRange(float3 LonLatLev, float2 LonRange, float2 LatRa
 		(LonLatLev.y - LatRange.x) / (LatRange.y - LatRange.x ),
 		(LonLatLev.z - LevRange.x) / (LevRange.y - LevRange.x ));
 }
+
+float3 NormalizedToDegree(float3 NormalizedLonLatLev, float2 LonRange, float2 LatRange, float2 LevRange)
+{
+	return float3(NormalizedLonLatLev.x *(LonRange.y - LonRange.x) + LonRange.x,
+		NormalizedLonLatLev.y *(LatRange.y - LatRange.x) + LatRange.x,
+		NormalizedLonLatLev.z *(LevRange.y - LevRange.x) + LevRange.x);		
+}
+
+
 [numthreads(1, 1, 1)]
 void MainCS_3D(
 	uint3 GroupId : SV_GroupID,
@@ -199,7 +210,7 @@ void MainCS_3D(
 
 	// NextPos = CurrPos + Current Speed
 	// nextPos will be LineEnd In DrawPass, therefore pos has to be valid
-	float3 nextPos = currPos + speed;
+	float3 nextPos = NormalizedToDegree(NormalizeLonLatLevByRange(currPos, DataLonRange, DataLatRange, DataLevRange) + speed, DataLonRange, DataLatRange, DataLevRange);
 	nextPos.x = nextPos.x < 0 ? 360.0 + nextPos.x : fmod(nextPos.x, 360.0);  // Prevent Line Movement Break at Degree 0<->360 
 	float posValidBit = 1.0;
 	
