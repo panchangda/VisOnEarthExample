@@ -687,16 +687,20 @@ void FFlowFieldRenderer::Render(FPostOpaqueRenderParameters& InParameters)
 		return ;
 	}
 
-	// Use FrameCounter to Decide Trail Index
-	FrameCounter = (FrameCounter+1) % Settings.TrailLength;
-
 	
-	// Compute Particles Pass, Write Result to Buffer / Map
+
+	if(!Settings.Suspend)
+	{
+		// Use FrameCounter to Decide Trail Index
+		FrameCounter = (FrameCounter+1) % Settings.TrailLength;
+		// Compute Particles Pass, Write Result to Buffer / Map
 #if FLOWFIELD_USE_COMPUTE
-	AddComputeParticleCSPass(InParameters);
+		AddComputeParticleCSPass(InParameters);
 #else
-	AddComputeParticlePSPass(InParameters);
+		AddComputeParticlePSPass(InParameters);
 #endif
+	}
+
 	
 	// DrawLines Pass:
 	// 1. Transoform Particle Position to Cesium Earth

@@ -46,6 +46,10 @@ void UFlowFieldUIWidget::NativeConstruct()
 
 	HueOffsetComponent->InitializeBasic(FText::FromString("HueOffset"), FlowFieldSettings.HueOffset, 0.0f, 360.0f,UIVariableType::Float);
 	HueOffsetComponent->OnValueChangedDelegate.BindUObject(this, &UFlowFieldUIWidget::OnHueOffsetComponentValueChanged);
+
+	ArrowButton->OnClicked.AddDynamic(this, &UFlowFieldUIWidget::OnArrowButtonClicked);
+
+	SuspendButton->OnClicked.AddDynamic(this, &UFlowFieldUIWidget::OnSuspendButtonClicked);
 	
 	DestroyButton->OnClicked.AddDynamic(this, &UFlowFieldUIWidget::OnDestroyButtonClicked);
 
@@ -134,5 +138,17 @@ void UFlowFieldUIWidget::OnDestroyButtonClicked()
 
 	this->RemoveFromParent();
 	
+}
+
+void UFlowFieldUIWidget::OnArrowButtonClicked()
+{
+	FlowFieldSettings.DrawArrow = !FlowFieldSettings.DrawArrow;
+	SetupActor();
+}
+
+void UFlowFieldUIWidget::OnSuspendButtonClicked()
+{
+	FlowFieldSettings.Suspend = !FlowFieldSettings.Suspend;
+	SetupActor();
 }
 

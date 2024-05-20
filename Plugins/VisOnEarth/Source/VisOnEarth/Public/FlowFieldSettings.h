@@ -9,6 +9,10 @@ USTRUCT(BlueprintType)
 struct FFlowFieldSettings
 {
 	GENERATED_USTRUCT_BODY()
+
+	// If Suspend Particle Update
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
+	bool Suspend = false;
 	
 	/* Field Data Related Settings */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flow Field | Settings")
@@ -105,7 +109,8 @@ struct FFlowFieldSettings
 	// 重载等号运算符以比较两个结构体实例
 	bool operator==(const FFlowFieldSettings& Other) const
 	{
-		return DataLonRange == Other.DataLonRange &&
+		return Suspend == Other.Suspend &&
+			DataLonRange == Other.DataLonRange &&
 			DataLatRange == Other.DataLatRange &&
 			DataLevRange == Other.DataLevRange &&
 			DataDimension == Other.DataDimension &&

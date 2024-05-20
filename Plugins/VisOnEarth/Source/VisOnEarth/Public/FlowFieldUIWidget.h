@@ -54,6 +54,12 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	USliderWithEditableTextUIWidget* HueOffsetComponent;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton* ArrowButton;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton* SuspendButton;
 	
 	UPROPERTY(meta = (BindWidget))
 	class UButton* DestroyButton;
@@ -87,7 +93,10 @@ private:
 
 	UFUNCTION()
 	void OnDestroyButtonClicked();
-	
+	UFUNCTION()
+	void OnArrowButtonClicked();
+	UFUNCTION()
+	void OnSuspendButtonClicked();
 	UFUNCTION()
 	void SetupActor();
 	
