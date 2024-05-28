@@ -21,7 +21,7 @@ void AVisOnEarthGameMode::BeginPlay()
 	UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(PlayerController);
 	PlayerController->bShowMouseCursor = true;
 	
-	UClass* BP_VisOnEarthUI = LoadClass<UVisOnEarthUIWidget>(nullptr, TEXT("/VisOnEarth/BP_VisOnEarthUI.BP_VisOnEarthUI_C"));
+	UClass* BP_VisOnEarthUI = LoadClass<UVisOnEarthUIWidget>(nullptr, TEXT("/VisOnEarth/UI/BP_VisOnEarthUI.BP_VisOnEarthUI_C"));
 	VisOnEarthUI = CreateWidget<UVisOnEarthUIWidget>(GetWorld(), BP_VisOnEarthUI);
 	VisOnEarthUI->AddToViewport(0);
 	

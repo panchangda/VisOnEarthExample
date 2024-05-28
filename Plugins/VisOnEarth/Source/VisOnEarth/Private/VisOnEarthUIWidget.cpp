@@ -33,7 +33,7 @@ void UVisOnEarthUIWidget::OnAddFlowFieldButtonClicked()
 	{
 		// Initialize UI Widget
 		UClass* BP_FlowFieldUI = LoadClass<UFlowFieldUIWidget>(
-			nullptr, TEXT("/VisOnEarth/BP_FlowFieldUI.BP_FlowFieldUI_C"));
+			nullptr, TEXT("/VisOnEarth/UI/BP_FlowFieldUI.BP_FlowFieldUI_C"));
 		FlowFieldUIWidgets = CreateWidget<UFlowFieldUIWidget>(GetWorld(), BP_FlowFieldUI);
 
 		UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(FlowFieldUIWidgets));
@@ -45,7 +45,7 @@ void UVisOnEarthUIWidget::OnAddLICButtonClicked()
 {
 	// Initialize UI Widget
 	UClass* BP_LICUI = LoadClass<ULICUIWidget>(
-		nullptr, TEXT("/VisOnEarth/BP_LICUI.BP_LICUI_C"));
+		nullptr, TEXT("/VisOnEarth/UI/BP_LICUI.BP_LICUI_C"));
 	ULICUIWidget* LICUI = CreateWidget<ULICUIWidget>(GetWorld(), BP_LICUI);
 
 	UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(LICUI));
@@ -56,7 +56,7 @@ void UVisOnEarthUIWidget::OnAddVortexButtonClicked()
 {
 	// Initialize UI Widget
 	UClass* UIBPClass = LoadClass<UVortexUIWidget>(
-		nullptr, TEXT("/VisOnEarth/BP_VortexUI.BP_VortexUI_C"));
+		nullptr, TEXT("/VisOnEarth/UI/BP_VortexUI.BP_VortexUI_C"));
 	UVortexUIWidget* UIWidget = CreateWidget<UVortexUIWidget>(GetWorld(), UIBPClass);
 
 	UScrollBoxSlot* ScrollBoxSlot = Cast<UScrollBoxSlot>(VisOptionScrollBox->AddChild(UIWidget));
