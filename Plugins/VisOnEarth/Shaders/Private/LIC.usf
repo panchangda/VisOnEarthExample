@@ -7,6 +7,7 @@ float GetWindowCoef(int i, int isSingleMoving, float phi, int T)
 	return 1 + sin(2 * PI * (i + phi) / T) / 2;
 }
 
+
 float GetHueByVector(float2 v)
 {
 	return (atan2(v.y, v.x) / PI + 1) * 180;
