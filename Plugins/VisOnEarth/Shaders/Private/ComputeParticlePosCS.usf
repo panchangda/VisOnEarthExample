@@ -66,7 +66,7 @@ float3 calculateSpeedByForwardEuler(float3 lonLatLev){
 	float3 f_n = WindFieldTexture.SampleLevel(WindFieldTextureSampler, lonLatLev.xy, 0).xyz;
 	float3 speed = h * f_n * SpeedFactor;
 	return speed;  
-}
+} 
 
 
 
